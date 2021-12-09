@@ -1,0 +1,43 @@
+Package: gtfsmulti
+Title: Creating, storing and analyzing multi-modal transportation networks
+Version: 0.1.0
+Authors@R:
+  person(
+    "Lucas", "van der Meer",
+    email = "l.vdmeer@triply.at",
+    role = c("aut", "cre")
+  )
+Description: Implements a very experimental approach to creating, storing and
+  analyzing multi-modal transportation networks using GTFS-Multi feeds.
+License: GPL-3
+Depends:
+  R (>= 3.1.0)
+Imports:
+  data.table,
+  dodgr,
+  geodist,
+  gtfsio,
+  gtfsrouter,
+  hms,
+  igraph,
+  osmextract,
+  pbapply,
+  sf,
+  sfheaders,
+  sfnetworks,
+  stats,
+  stars,
+  tools,
+  units,
+  utils
+Suggests:
+  ggplot2,
+  kableExtra,
+  knitr,
+  mapview,
+  rmarkdown
+Encoding: UTF-8
+LazyData: true
+LazyDataCompression: xz
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.2

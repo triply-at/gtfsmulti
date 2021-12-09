@@ -1,0 +1,724 @@
+---
+title: "1. Introducing the GTFS-Multi format"
+author: "Lucas van der Meer, triply GmbH"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{1. Introducing the GTFS-Multi format}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+The `gtfsmulti` package implements a very experimental approach to creating, storing and analyzing multi-modal transportation networks. This vignette will explain how the ideas behind the approach developed and how you can construct a GTFS-Multi feed, a multi-modal extension to the regular [GTFS format](https://developers.google.com/transit/gtfs).
+
+```{r libs, message = FALSE}
+library(gtfsmulti)
+library(dodgr)
+library(mapview)
+library(sf)
+library(sfnetworks)
+library(tidygraph)
+library(units)
+```
+
+## Background
+
+The ideas behind `gtfsmulti` are largely inspired by how Conveyal approaches multi-modal routing with their [R5](https://github.com/conveyal/r5) routing engine. This can be summarized as follows. R5 utilizes a regular grid of cells covering the entire analysis area. The centroids of these grid cells (the *grid points*) form the set of possible destinations when e.g. calculating catchment areas or cumulative accessibility measures for a given origin. A multi-modal route between the origin and one of the destinations may then consist of several parts: travelling on the street network from the origin to a transit stop (i.e. the *access* leg), travelling between transit stops in a transit vehicle, travelling on the street network between transit stops to transfer from one transit vehicle to another (i.e. the *transfer* leg), and travelling on the street network from a transit stop to the selected grid point (i.e. the *egress* leg). It is also possible to travel directly from the origin to the destination, without using transit. Such a trip is called a *direct* trip.
+
+Finding optimal multi-modal routes is a challenging task that involves both street network routing as well as transit network routing. The street network routing task is usually solved by graph-based algorithms in which street segments are edges and street intersections are nodes. The transit network routing task is usually solved by schedule-based algorithms that only scan the transit timetable rather than explicitly modelling the network as a graph. To reduce the complexitly of the routing task at runtime, R5 pre-calculates (as far as I understand) quite a lot of street network travel times e.g. between transit stop locations, street network vertices and grid points when combining the street network (loaded from an OpenStreetMap extract in [PBF format](https://wiki.openstreetmap.org/wiki/PBF_Format)) and the transit network (loaded from a [GTFS archive](https://gtfs.org/)) into a single, internally used transport network representation.
+
+While trying to understand the internals of R5, I got the following idea. If we are already pre-calculating so many street network travel times, can we not simply include them in the transit network timetable, which can then be utilized by any GTFS-consuming routing engine? In the end, the grid points are fixed locations in space, just like transit stops. When we take the R5 approach a step further and also use the grid points as *origins* of trips, the access leg of a multi-modal route can be seen as a "transfer" from a grid point to a transit stop, and the egress leg as a "transfer" from a transit stop to a grid point. Using the same thought, a direct trip is a "transfer" from one grid point to another. I formalized this idea as an extension to the standard GTFS format: GTFS-Multi. It takes quite some pre-processing to create such a GTFS-Multi feed, but the benefit is that afterwards *only* schedule-based routing algorithms (i.e. those that scan a transit timetable) are sufficient to find optimal multi-modal routes between an origin and (multiple) destination(s).
+
+The `gtfsmulti` package contains functions to create, read and write GTFS-Multi feeds, as well as functions for multi-modal routing with a GTFS-Multi feed. It internally relies on [gtfsrouter](https://github.com/ATFutures/gtfs-router), an R package for fast schedule-based routing with GTFS feeds, and [dodgr](https://github.com/ATFutures/gtfs-router), an R package for dual-weighted street network routing.
+
+Please note that `gtfsmulti` is not meant to substitute R5 at all. R5 is a great tool created and maintained by a group of highly experienced people that spend years of work on its development. The `gtfsmulti` package will by no means be able to do all the things that R5 can do, let alone at the same scale and the same speed. However, when using R5 (usually through the [r5r](https://github.com/ipeaGIT/r5r) package) in a more explorative way, I regularly feel the need for more control over the different phases in the routing workflow. For example:
+
+- R5 finds shortest paths on the street network by minimizing travel time, in which travel time (at least for the active transport modes) is calculated as the travel distance multiplied by a fixed travel speed. Often I want to explore scenarios in which travel time is not the only optimization objective, and instead use custom edge weights that include multiple factors such as safety and health (but at the same time obtaining *only* travel time as the reported cost of a route, hence [dual-weighted routing](https://atfutures.github.io/dodgr/#whats-so-special)). Or I want to remove certain types of edges from the network. Or I want to use a variable travel speed based on attributes like road surface and elevation. In R5 this would mean that I either have to modify the OpenStreetMap input (there are [plugins](https://docs.conveyal.com/learn-more/generalized-cost) that make this task slightly easier but in my opinion it remains either too limiting or too complicated), or be lucky enough that my objective is natively supported (such as filtering edges by their [level of traffic stress](https://docs.conveyal.com/learn-more/traffic-stress)).
+- R5 calculates shortest travel times between and origin and destination at every minute within a given time interval. This gives a distribution of travel times. However, R5 only returns certain percentile values of that distribution. In many cases I would like to obtain the *full* distribution of travel times, since they are calculated either way. This allows e.g. for detailed temporal analysis of accessibility.
+- R5 calculates shortest travel times between and origin and destination at every minute within a given time interval. This gives a detailed distribution of travel times. However, for larger time windows I often like to sacrifice a bit of detail to performance, e.g. by calculating travel times only at every 5 or 10 minutes. As far as I know you can currently not tune this with R5. The iteration frequency is *always* 1 minute.
+- R5 uses a regular grid in the Web Mercator projection, which comes with its [limitations](https://www.researchgate.net/publication/265895464_Implications_of_Web_Mercator_and_Its_Use_in_Online_Mapping) especially when used for analysis purposes. I rather use a regular grid in an appropriate projection for the specific area of interest.
+
+Of course, R5 is open-source software, and thus, in theory nothing holds you back from modifying the source code (and potentially contributing to R5 itself). However, in practice this can be rather complicated, given that the source code of R5 contains hundreds of thousands lines of code. That is the reason why I started thinking about an alternative. As said, the idea and the implementation are very experimental, and to be honest I am quite sceptical about its scalability to larger areas. However, it is primarily intended to be used for exploratory analysis on smaller scales and with full flexibility, and I think it serves that purpose quite well.
+
+## Specification
+
+A GTFS-Multi feed extends a regular, static GTFS feed by defining four additional files in the dataset: [grid.txt](#grid.txt), [access.txt](#access.txt), [direct.txt](#direct.txt) and [egress.txt](#egress.txt). On top of that, it modifies the existing specification of the [transfers.txt](#transfers.txt) file.
+
+The field definitions of the added/modified files are as follows.
+
+### grid.txt
+
+File: **Required**
+
+The grid table stores the locations of all grid points in the reference grid. It has a similar structure to the [stops.txt](https://developers.google.com/transit/gtfs/reference#stopstxt) file in a regular GTFS feed.
+
+```{r grid_spec, echo=FALSE}
+specs = data.frame(
+  name = c(
+    "`stop_id`",
+    "`row_id`",
+    "`col_id`",
+    "`stop_name`",
+    "`stop_desc`",
+    "`stop_lat`",
+    "`stop_lon`"
+  ),
+  type = c(
+    "ID",
+    "Enum",
+    "Enum",
+    "Text",
+    "Text",
+    "Latitude",
+    "Longitude"
+  ),
+  required = c(
+    "**Required**",
+    "Optional",
+    "Optional",
+    "**Required**",
+    "Optional",
+    "**Required**",
+    "**Required**"
+  ),
+  description = c(
+    "Uniquely identifies a grid point.",
+    "Row number of the position of the grid point inside the grid.",
+    "Column number of the position of the grid point inside the grid.",
+    "Name of the grid point. Merely required to correspond with regular stop table requirements.",
+    "Description of the location that provides useful, quality information. Do not simply duplicate the name of the location.",
+    "Latitude of the location.",
+    "Longitude of the location."
+  )
+)
+
+names(specs) = c("Field Name", "Type", "Required", "Description")
+
+kableExtra::kable_styling(knitr::kable(specs), bootstrap_options = c("bordered", "condensed"))
+```
+
+### access.txt
+
+File: **Required**
+
+The access table stores street network travel times between grid points and transit stop locations. It has a similar structure to the [transfers.txt](https://developers.google.com/transit/gtfs/reference#transferstxt) file in a regular GTFS feed. Travel times can be stored separately for different modes of transport.
+
+```{r access_spec, echo=FALSE}
+specs = data.frame(
+  name = c(
+    "`from_stop_id`",
+    "`to_stop_id`",
+    "`transfer_type`",
+    "`transfer_time_*mode*`"
+  ),
+  type = c(
+    "ID referencing `grid.stop_id`",
+    "ID referencing `stops.stop_id`",
+    "Enum",
+    "Non-negative integer"
+  ),
+  required = c(
+    "**Required**",
+    "**Required**",
+    "**Required**",
+    "**Required**"
+  ),
+  description = c(
+    "Identifies a grid point where an access trip begins.",
+    "Identifies a stop or station where an access trip ends. If this field refers to a station, the transfer rule applies to all child stops.",
+    "Indicates the type of connection. Only valid option is 2. Merely required to correspond with regular transfer table requirements.",
+    "Amount of time, in seconds, it takes to complete the trip, using a specific transport mode. Each included transport mode will have its own column, e.g. `transfer_time_bicycle` and `transfer_time_walk`."
+  )
+)
+
+names(specs) = c("Field Name", "Type", "Required", "Description")
+
+kableExtra::kable_styling(knitr::kable(specs), bootstrap_options = c("bordered", "condensed"))
+```
+
+### direct.txt
+
+File: **Required**
+
+The direct table stores street network travel times between two different grid points. It has a similar structure to the [transfers.txt](https://developers.google.com/transit/gtfs/reference#transferstxt) file in a regular GTFS feed. Travel times can be stored separately for different modes of transport.
+
+```{r direct_spec, echo=FALSE}
+specs = data.frame(
+  name = c(
+    "`from_stop_id`",
+    "`to_stop_id`",
+    "`transfer_type`",
+    "`transfer_time_*mode*`"
+  ),
+  type = c(
+    "ID referencing `grid.stop_id`",
+    "ID referencing `grid.stop_id`",
+    "Enum",
+    "Non-negative integer"
+  ),
+  required = c(
+    "**Required**",
+    "**Required**",
+    "**Required**",
+    "**Required**"
+  ),
+  description = c(
+    "Identifies a grid point where a direct trip begins.",
+    "Identifies a grid point where a direct trip end.",
+    "Indicates the type of connection. Only valid option is 2. Merely required to correspond with regular transfer table requirements.",
+    "Amount of time, in seconds, it takes to complete the trip, using a specific transport mode. Each included transport mode will have its own column, e.g. `transfer_time_bicycle` and `transfer_time_walk`."
+  )
+)
+
+names(specs) = c("Field Name", "Type", "Required", "Description")
+
+kableExtra::kable_styling(knitr::kable(specs), bootstrap_options = c("striped"))
+```
+
+### egress.txt
+
+File: **Required**
+
+The egress table stores street network travel times between transit stop locations and grid points. It has a similar structure to the [transfers.txt](https://developers.google.com/transit/gtfs/reference#transferstxt) file in a regular GTFS feed. Travel times can be stored separately for different modes of transport.
+
+```{r egress_spec, echo=FALSE}
+specs = data.frame(
+  name = c(
+    "`from_stop_id`",
+    "`to_stop_id`",
+    "`transfer_type`",
+    "`transfer_time_*mode*`"
+  ),
+  type = c(
+    "ID referencing `stops.stop_id`",
+    "ID referencing `grid.stop_id`",
+    "Enum",
+    "Non-negative integer"
+  ),
+  required = c(
+    "**Required**",
+    "**Required**",
+    "**Required**",
+    "**Required**"
+  ),
+  description = c(
+    "Identifies a stop or station where an egress trip begins. If this field refers to a station, the transfer rule applies to all child stops.",
+    "Identifies a grid point where an egress trip ends.",
+    "Indicates the type of connection. Only valid option is 2. Merely required to correspond with regular transfer table requirements.",
+    "Amount of time, in seconds, it takes to complete the trip, using a specific transport mode. Each included transport mode will have its own column, e.g. `transfer_time_bicycle` and `transfer_time_walk`."
+  )
+)
+
+names(specs) = c("Field Name", "Type", "Required", "Description")
+
+kableExtra::kable_styling(knitr::kable(specs), bootstrap_options = c("bordered", "condensed"))
+```
+
+### transfers.txt
+
+File: **Required**
+
+The transfer table stores street network travel times between two different transit stop locations. It has a similar structure to the [transfers.txt](https://developers.google.com/transit/gtfs/reference#transferstxt) file in a regular GTFS feed. Travel times can be stored separately for different modes of transport.
+
+```{r transfer_spec, echo=FALSE}
+specs = data.frame(
+  name = c(
+    "`from_stop_id`",
+    "`to_stop_id`",
+    "`transfer_type`",
+    "`transfer_time_*mode*`"
+  ),
+  type = c(
+    "ID referencing `stops.stop_id`",
+    "ID referencing `stops.stop_id`",
+    "Enum",
+    "Non-negative integer"
+  ),
+  required = c(
+    "**Required**",
+    "**Required**",
+    "**Required**",
+    "**Required**"
+  ),
+  description = c(
+    "Identifies a stop or station where a transfer trip begins. If this field refers to a station, the transfer rule applies to all child stops.",
+    "Identifies a stop or station where a transfer trip ends. If this field refers to a station, the transfer rule applies to all child stops.",
+    "Indicates the type of connection. Only valid option is 2. Merely required to correspond with regular transfer table requirements.",
+    "Amount of time, in seconds, it takes to complete the trip, using a specific transport mode. Each included transport mode will have its own column, e.g. `transfer_time_bicycle` and `transfer_time_walk`."
+  )
+)
+
+names(specs) = c("Field Name", "Type", "Required", "Description")
+
+kableExtra::kable_styling(knitr::kable(specs))
+```
+
+## Construction
+
+### Defining the spatial extent of the analysis
+
+The spatial extent of the analysis is a rectangular area over which the reference grid will be created. That is, all origins and destinations of multi-modal routes can only be inside this area. As an example we will use an area covering the centre of Tampere, Finland. We can use the `create_extent()` function to create one. We will express coordinates in the common local projected coordinate reference system, which in Finland is [EPSG:3067](https://epsg.io/3067).
+
+```{r create_extent}
+bounds = c(325200, 6819850, 330200, 6824850)
+extent = create_extent(bounds, input_crs = 3067, output_crs = 3067)
+```
+
+The transit network (i.e. GTFS file) and street network (i.e. OSM PBF file) will be cropped such that they only contain data relevant for the analysis. For this cropping we use a slightly larger area than the analysis extent itself, to minimize border effects.
+
+```{r create_large_extent}
+large_bounds = st_bbox(extent) + c(-2000, -2000, 2000, 2000)
+large_extent = create_extent(large_bounds, input_crs = 3067, output_crs = 3067)
+```
+
+```{r plot_extent, fig.width=7, fig.height=4}
+mapview(large_extent, col.regions = "#595959") +
+  mapview(extent, col.regions = "#00b27a")
+```
+
+### Reading the transit network
+
+The source of the transit network should be a regular GTFS feed stored in a `.zip` file. We can use the `import_transitnet()` function to read such a transit network into R. It allows to provide a spatial extent through the `extent` argument. Doing so will only keep transit stops within that extent, and the trips that contain them.
+
+> **NOTE**</br>
+> To reduce its size the example GTFS file we use for Tampere was first filtered. As a spatial filter: only stops with coordinates inside spatial bounding box `23.556649, 61.44593, 23.892189, 61.557975` and associated trips where kept. As a temporal filter: only stop time entries with departure time inside time interval `06:00, 12:00` and associated trips where kept. Tables *shapes.txt*, *fare_attributes.txt* and *fare_rules.txt* where removed.
+
+```{r read_transitnet, cache = TRUE}
+gtfs_file = system.file("tampere.zip", package = "gtfsmulti")
+transitnet = import_transitnet(gtfs_file, extent = large_extent)
+```
+
+```{r view_transitnet}
+names(transitnet)
+```
+
+```{r view_stops}
+stops = transitnet$stops
+stops
+```
+
+```{r plot_transitnet, fig.width=7, fig.height=4}
+stops_sf = st_as_sf(transitnet$stops, coords = c("stop_lon", "stop_lat"), crs = 4326)
+
+mapview(large_extent, alpha.regions = 0, alpha = 1, lwd = 3) +
+  mapview(extent, alpha.regions = 0, alpha = 1, lwd = 3) +
+  mapview(stops_sf, layer.name = "stops", col.regions = "#00b27a", cex = 4)
+```
+
+### Reading the street network
+
+The source of the street network should be a OpenStreetMap dump stored as a `osm.pbf` file. We can use the `import_streetnet()` function to extract the streets from such a file and read them as `LINESTRING` geometries into R. It assumes that streets have a value for the OSM [highway tag](https://wiki.openstreetmap.org/wiki/Key:highway). Through the `highway_types` argument you can specify a subset of all possible values for this tag, such that only a subset of streets is imported. For example, when setting `highway_types = c("primary", "secondary")` only streets tagged as primary or secondary are imported. By default, the following highway types are considered streets:
+
+```{r highway_types}
+gtfsmulti::DEFAULT_HIGHWAY_TYPES
+```
+
+Through the `tags` argument you can specify which [OSM tags](https://wiki.openstreetmap.org/wiki/Tags) you want to include as attribute columns of the imported linestrings. Such attributes can be used to define custom edge weights later on. For example, if you want to create custom edge weights based on the number of lanes of a street, you'll need to include the [lanes tag](https://wiki.openstreetmap.org/wiki/Key:lanes) as an attribute of the street linestrings when importing the street network. Also, the [oneway tag](https://wiki.openstreetmap.org/wiki/Key:oneway) should be present if you want to consider one-directional streets during [graph building](#Building-a-routable-street-network). By default, the following tags are included as attribute columns:
+
+```{r tags}
+gtfsmulti::DEFAULT_TAGS
+```
+
+The `import_streetnet()` function also allows to provide a spatial extent through the `extent` argument. Doing so will only keep street linestrings that intersect with that extent.
+
+Since we will at a later stage create very simple custom edge weights based on nothing more than the highway type of a street, we only request a limited amount of tags to be included as attribute columns.
+
+> **NOTE**</br>
+> To reduce its size the example OSM file we use for Tampere was first filtered. Only features having either a value for the highway tag or a certain value (doctors, dentist, pharmacy or hospital) for the amenity tag where kept.
+
+```{r read_streetnet, cache = TRUE}
+osm_file = system.file("tampere.osm.pbf", package = "gtfsmulti")
+osm_tags = c("highway", "oneway")
+streets = import_streetnet(osm_file, extent = large_extent, tags = osm_tags, quiet = TRUE)
+```
+
+```{r view_streetnet}
+streets
+```
+
+```{r plot_streetnet, fig.width=7, fig.height=4}
+mapview(large_extent, alpha.regions = 0, alpha = 1, lwd = 3, pane = NULL) +
+  mapview(extent, alpha.regions = 0, alpha = 1, lwd = 3, pane = NULL) +
+  mapview(streets, color = "#00b27a")
+```
+
+### Creating the reference grid
+
+The reference grid is a regular grid with square cells covering the area of interest. The centroids of the grid cells, i.e. the grid points, will serve as possible origins and destinations of multi-modal routes. That means that both the true origin (e.g. a home location) and true destination (e.g. a job location) will always be "represented" by their nearest grid point. Therefore it is of great importance for the accuracy of the calculated travel times to choose a *fine* resolution for the grid. For more details on how travel times are calculated, see [here](). In this example we will use a 100x100 meter spatial resolution for our grid. Grids are modelled as `stars` objects. We can use the `create_reference_grid()` function to create one.
+
+```{r create_grid}
+grid = create_reference_grid(extent, cellsize = 100)
+grid
+```
+
+Each pixel in the reference grid has a placeholder value equal to 1. This means that the centroid of this specific pixel will be included as grid point in the [grid table](#Creating-the-grid-table) of the GTFS-Multi feed. To reduce the size of that table, we can mask the reference grid by our imported street linestrings, using the `mask_grid()` function. In practice, this means that all pixels that do *not* have any street intersecting them will be assigned a value of `NA`, and not be included as grid points in the grid table later on.
+
+```{r mask_grid}
+grid = mask_grid(grid, streets)
+grid
+```
+
+### Creating the grid table
+
+The [grid table](#grid.txt) is the conversion of the reference grid into a flat table format with the same structure as the [stops table](https://developers.google.com/transit/gtfs/reference#transferstxt) in a regular GTFS feed. It contains the coordinates of each grid point expressed as longitude and latitude values in coordinate reference system [EPSG:4326](https://epsg.io/4326). We can use the `create_grid_table()` function to convert our reference grid into the grid table format.
+
+> **NOTE**</br>
+> We are now focusing on the common case where the reference grid is a regular grid covering the area of interest. However, in the end the grid table just contains all possible origin and destination points. This structure is flexible enough to also allow for non-regulary spaced points, such as addresses or service locations. Do note that in such cases it will not be possible to export and visualize routing results as travel time grids (see the second vignette for details).
+
+```{r create_grid_table}
+points = create_grid_table(grid)
+points
+```
+
+```{r plot_grid_table, fig.width=7, fig.height=4}
+points_sf = st_as_sf(points, coords = c("stop_lon", "stop_lat"), crs = 4326)
+
+mapview(extent, alpha.regions = 0, alpha = 1, lwd = 3) +
+  mapview(points_sf, layer.name = "grid", col.regions = "#00b27a", cex = 3)
+```
+
+### Building a routable street network
+
+With the transit network stop locations and the grid points we have now all our origins and destinations for the access, direct, egress and transfer trips. We also have the streets on which we want to find routes between these origins and destinations. However, at this point these streets are just lines. Before we can use them in routing tasks, we need to build a routable graph out of them. This is a step-wise process. The graph will be directed, so first all linestring geometries of those streets that are *not* marked as being a oneway street (through the *oneway* attribute column if present) are duplicated and reversed. Then, all the linestring geometries are split such that their segments become separate linestring geometries on their own. These serve as the edges in the initial graph, and their endpoints become the nodes. Endpoints that are shared between multiple edges become a single node, such that these edges are connected. Only the largest connected component of the initial graph is preserved. Finally, the initial graph is smoothed by removing all nodes that are neither a terminal node (i.e. a node at the end of an edge without a connection to any other edge) nor a junction node (i.e. a node that connects more than two edges).
+
+This graph building process is implemented by the `build_streetnet()` function, which will return the network as an `sfnetworks::sfnetwork()` object. It contains a parameter `protect` to which you can pass a set of locations that "protect" their nearest node in the initial (i.e. non-smoothed) graph. Protecting in this case means that these nodes are *never* removed during smoothing, even if they are neither a terminal nor junction node. This is useful since it allows us to have nodes in the street network that are as close as possible to our origin and destination locations. In the end it are these nearest nodes that are the origins and destinations from the eye of the street network routing algorithm, rather than the stop locations or grid points themselves.
+
+```{r build_streetnet, cache = TRUE}
+od = rbind(points[, c("stop_lat", "stop_lon")], stops[, c("stop_lat", "stop_lon")])
+streetnet = build_streetnet(streets, protect = od)
+streetnet
+```
+
+### Setting edge weights
+
+The distance of each edge is stored as *distance* attribute in the edges table of the network. The *weight* attribute of each edge is by default equal to this distance. But that is of course not what we want! First of all, we want to obtain travel *times*. That means we have to add an attribute to each edge that tells us how long it takes to traverse that edge. Of course, these travel times are different for each mode of transport, so we will end up with a different *time* attribute per mode. For sake of simplicity, let us consider only two transport modes: cycling and walking. We could just multiply the distance of each edge by a fixed travel speed for each of these modes, but we will take it one step further. Instead of a fixed travel speed on every street, we let the travel speed depend on the type of the street.
+
+For that, we will use an existing mapping from highway types to travel speeds as present in `dodgr::weighting_profiles`:
+
+```{r get_dodgr_profiles}
+mapping = dodgr::weighting_profiles$weighting_profiles
+```
+
+```{r speed_mappings}
+bike_speed = mapping[mapping$name == "bicycle", c("way", "max_speed")]
+bike_speed$max_speed = set_units(bike_speed$max_speed, "km/h")
+names(bike_speed) = c("highway", "speed_bike")
+
+walk_speed = mapping[mapping$name == "foot", c("way", "max_speed")]
+walk_speed$max_speed = set_units(walk_speed$max_speed, "km/h")
+names(walk_speed) = c("highway", "speed_walk")
+
+speeds = merge(bike_speed, walk_speed, by = "highway", all = TRUE)
+speeds
+```
+
+We will join these speeds to our networks edges table, and calculate the travel time of each edge (per mode) accordingly.
+
+```{r set_time}
+streetnet = streetnet |>
+  activate("edges") |>
+  left_join(speeds, by = "highway") |>
+  mutate(time_bike = distance / set_units(speed_bike, "m/s")) |>
+  mutate(time_walk = distance / set_units(speed_walk, "m/s"))
+
+streetnet |>
+  select(highway, distance, speed_bike, speed_walk, time_bike, time_walk) |>
+  as_tibble()
+```
+
+The travel time is in the end the measure we want to obtain for the optimal route between an origin and destination, but it may not be the only factor we want to optimize when defining what makes a route "optimal". Luckily, dual-weighted routing as implemented in [dodgr](https://atfutures.github.io/dodgr/#whats-so-special) allows us to use one set of weights to find the optimal path, and another set to report the total cost (in this case travel time) of that path.
+
+Lets say we have only one other factor playing a role in route choice, which is the discomfort a person perceives when traversing an edge using a certain mode of transport. Lets also say that we can quantify this discomfort by a value between 1 (low discomfort) and 2 (high discomfort), and that this value is a function of *only* the type of street. We will use again an existing mapping present in `dodgr::weighting_profiles`, this time from highway types to preferences, and adapt them to fit our oversimplified example.
+
+```{r discomfort_mappings}
+bike_dc = mapping[mapping$name == "bicycle", c("way", "value")]
+bike_dc$value = 2 - bike_dc$value
+names(bike_dc) = c("highway", "dc_bike")
+
+walk_dc = mapping[mapping$name == "foot", c("way", "value")]
+walk_dc$value = 2 - walk_dc$value
+names(walk_dc) = c("highway", "dc_walk")
+
+discomforts = merge(bike_dc, walk_dc, by = "highway", all = TRUE)
+discomforts
+```
+
+```{r set_dc}
+streetnet = streetnet |>
+  activate("edges") |>
+  left_join(discomforts, by = "highway")
+```
+
+No we will define the weight $\omega_{e,m}$ for edge $e$ and transport mode $m$ as a function of the travel time $\tau_{e,m}$ and the perceived discomfort $\rho_{e,m}$, as follows:
+
+$$
+\omega_{e,m} = (\rho_{e,m} \times k - (k - 1)) \times \tau_{e,m}
+$$
+
+This basically means that the travel time is multiplied by a "penalty". For the minimum discomfort, i.e. $\rho_{e,m} = 1$, the penalty is always 1 and the hence the weight of and edge is equal to the travel time, i.e. $\omega_{e,m} = \tau_{e,m}$. However, the higher the discomfort value, the higher the penalty. The constant $k$ tunes the magnitude of the penalty. The higher $k$, the stronger an increase in discomfort gets penalized. Let us just set $k = 1$ and hence simplify the cost function to:
+
+$$
+\omega_{e,m} = \rho_{e,m} \times \tau_{e,m}
+$$
+
+Now we can calculate the weights and add them as attributes to the edges in our network.
+
+```{r set_weight}
+cost_function = function(d, t, k) (d * k - (k - 1)) * t
+
+streetnet = streetnet |>
+  activate("edges") |>
+  mutate(weight_bike = cost_function(dc_bike, time_bike, k = 1)) |>
+  mutate(weight_walk = cost_function(dc_walk, time_walk, k = 1))
+
+streetnet |>
+  select(time_bike, time_walk, dc_bike, dc_walk, weight_bike, weight_walk) |>
+  as_tibble()
+```
+
+Of course the example above is oversimplified. However, I do hope it showed clearly how much flexibility you have in defining custom weights for each edge.
+
+As a final remark it is important to notice that a weight of `NA` means that this edge will *not* be included in the network when calculating routes. This allows you to remove certain edges when calculating routes for one mode (i.e. with one specific set of weights), but include them when calculating routes for another mode.
+
+### Creating access tables
+
+With the network built and the weights set, we can start calculating optimal paths for access trips on the street network. Remember from the [specification](#access.txt) that access trips are those trips originating from a grid point and leading to a transit stop location. The travel times of these optimal paths get stored in a table which has the same structure as a [transfer table](https://developers.google.com/transit/gtfs/reference#transferstxt) in a regular GTFS feed.
+
+Since travel times are different for each mode in our analysis, we will first create a separate transfer-like table for each mode. We can use the `create_transfer_table()` function to do that.
+
+Internally this function obtains all possible origin-destination pairs between the provided grid points and transit stop locations with `get_od_pairs()`, and calls `streetnet_traveltimes()` to calculate the travel times of the optimal routes. The latter is basically a wrapper around the dual-weighted routing functions of the dodgr package. It uses one set of weights to determine the optimal paths, and another one to report the total cost of that path, which in our case will always be travel time. We can forward the names of the attribute columns in our networks edges table containing these weights to respectively the `weight_column` and `time_column` parameters. Of course, if we simply want to calculate fastest travel times we may forward the same travel time column to both these parameters.
+
+> **NOTE**</br>
+> If you prefer an approach that is completely dodgr-based, and does not use sfnetworks, you can weigh the imported street linestrings with a pre-defined dodgr weighting profile for a specific mode, and forward that object as street network to `create_transfer_table()`. In that case, you don't have to specify the names for the time and weight column, since dodgr will automatically infer them. Hence:
+> ```
+> streetnet = weight_streetnet(streets, wt_profile = "bicycle")
+> create_transfer_table(points, stops, streetnet)
+> ```
+
+There are two other parameters we can set. First there is `d_limit`, which defines a maximum as-the-crow-flies distance (in meters) between an origin and destination in order to calculate a route between them. Setting this parameter to a low (but still acceptable) value may greatly reduce the amount of routes that need to be calculated, and thus improve performance.  Then there is `min_time`, which defines a minimum travel time between an origin an destination, even if the router calculated a lower travel time. In practice this means that it is assumed that travelling from one location to another will *always* take time, even if the coordinates of the locations are (almost) identical. It defaults to 120 seconds, i.e. 2 minutes.
+
+Lets get it started. Calculating street network routes is the most time consuming part of constructing GTFS-Multi feeds, especially when the reference grid has a fine resolution.
+
+> **NOTE**</br>
+> If your analysis is only focused on a single or limited set of origins, you can forward only a subset of the grid table as `origins` parameter to `create_transfer_table()`. This will prevent loads of useless access trips being calculated and included in the GTFS-Multi feed. Of course, you can not use that specific GTFS-Multi feed for analysis of other origins.
+
+```{r route_access, cache = TRUE}
+access_bike = create_transfer_table(
+  origins = points,
+  destinations = stops,
+  streetnet = streetnet,
+  time_column = "time_bike",
+  weight_column = "weight_bike",
+  d_limit = 1000
+)
+
+access_walk = create_transfer_table(
+  origins = points,
+  destinations = stops,
+  streetnet = streetnet,
+  time_column = "time_walk",
+  weight_column = "weight_walk",
+  d_limit = 500
+)
+
+access_bike
+```
+
+We will merge the different transfer-like tables with access trips for each mode into a single access table at a [later stage](#Combining-everything-into-a-GTFS-Multi-feed).
+
+### Creating direct tables
+
+Remember from the [specification](#direct.txt) that direct trips are those trips in between different grid points. The travel times of these optimal paths get stored in a table which has the same structure as a [transfer table](https://developers.google.com/transit/gtfs/reference#transferstxt) in a regular GTFS feed.
+
+Since travel times are different for each mode in our analysis, we will first create a separate transfer-like table for each mode. We can use the `create_transfer_table()` function to do that.
+
+See the sections on [creating access tables](#Creating-access-tables) for more details.
+
+```{r route_direct, cache = TRUE}
+direct_bike = create_transfer_table(
+  origins = points,
+  destinations = points,
+  streetnet = streetnet,
+  time_column = "time_bike",
+  weight_column = "weight_bike",
+  d_limit = 1000
+)
+
+direct_walk = create_transfer_table(
+  origins = points,
+  destinations = points,
+  streetnet = streetnet,
+  time_column = "time_walk",
+  weight_column = "weight_walk",
+  d_limit = 500
+)
+
+direct_bike
+```
+
+We will merge the different transfer-like tables with direct trips for each mode into a single direct table at a [later stage](#Combining-everything-into-a-GTFS-Multi-feed).
+
+### Creating egress tables
+
+Remember from the [specification](#egress.txt) that egress trips are those trips originating from a transit stop location and leading to a grid point. The travel times of these optimal paths get stored in a table which has the same structure as a [transfer table](https://developers.google.com/transit/gtfs/reference#transferstxt) in a regular GTFS feed.
+
+Since travel times are different for each mode in our analysis, we will first create a separate transfer-like table for each mode. We can use the `create_transfer_table()` function to do that.
+
+See the sections on [creating access tables](#Creating-access-tables) for more details.
+
+```{r route_egress, cache = TRUE}
+egress_bike = create_transfer_table(
+  origins = stops,
+  destinations = points,
+  streetnet = streetnet,
+  time_column = "time_bike",
+  weight_column = "weight_bike",
+  d_limit = 1000
+)
+
+egress_walk = create_transfer_table(
+  origins = stops,
+  destinations = points,
+  streetnet = streetnet,
+  time_column = "time_walk",
+  weight_column = "weight_walk",
+  d_limit = 500
+)
+
+egress_bike
+```
+
+We will merge the different transfer-like tables with egress trips for each mode into a single egress table at a [later stage](#Combining-everything-into-a-GTFS-Multi-feed).
+
+### Creating transfer tables
+
+Remember from the [specification](#transfers.txt) that transfer trips are those trips in between different transit stop locations. The travel times of these optimal paths get stored in a table which has the same structure as a [transfer table](https://developers.google.com/transit/gtfs/reference#transferstxt) in a regular GTFS feed.
+
+In the case of transfers between transit stops, we will only consider walking as a viable mode for now, an hence only create a single transfer-like table. We can use the `create_transfer_table()` function to do that.
+
+See the sections on [creating access tables](#Creating-access-tables) for more details.
+
+```{r route_transfer, cache = TRUE}
+transfer_walk = create_transfer_table(
+  origins = stops,
+  destinations = stops,
+  streetnet = streetnet,
+  time_column = "time_walk",
+  weight_column = "weight_walk",
+  d_limit = 250
+)
+
+transfer_walk
+```
+
+We will merge the different transfer-like tables with transfer trips for each mode into a single transfer table at a [later stage](#Combining-everything-into-a-GTFS-Multi-feed).
+
+### Combining everything into a GTFS-Multi feed
+
+Now we have all required tables ready, we can add them to the original GTFS feed and create a GTFS-Multi feed! There are specified `add_*` functions to add each type of table. For the transfer-like tables (i.e. [access](#Creating-access-tables), [direct](#Creating-direct-tables), [egress](#Creating-egress-tables) and [transfer](#Creating-transfer-tables)), we provide separate tables for each transfer mode all as keyword arguments to the `add_*` function, with the key being the name of a specific transport mode. Internally they will get merged into a single table in line with the [specification](#Specification). Do note that any original transfer table will be overwritten (*TODO*: don't just do this).
+
+```{r combine}
+multinet = transitnet |>
+  add_grid_table(points) |>
+  add_access_tables(bike = access_bike, walk = access_walk) |>
+  add_direct_tables(bike = direct_bike, walk = direct_walk) |>
+  add_egress_tables(bike = egress_bike, walk = egress_walk) |>
+  add_transfer_tables(walk = transfer_walk) |>
+  as_multinet()
+```
+
+```{r view_multinet_class}
+class(multinet)
+```
+
+```{r view_multinet_names}
+names(multinet)
+```
+
+```{r view_access_names}
+names(multinet$access)
+```
+
+## Reading and writing
+
+### Exporting a GTFS-Multi feed
+
+We can write a GTFS-Multi feed to a `.zip` file using the `export_multinet()` function.
+
+```{r export_multinet, message = FALSE}
+net_path = tempfile(fileext = ".zip")
+export_multinet(multinet, net_path)
+```
+
+Along with the feed itself, you can export its reference grid to a `.geotiff` file using the `export_grid()` function.
+
+```{r export_grid}
+grid_path = tempfile(fileext = ".geotiff")
+export_grid(grid, grid_path)
+```
+
+### Importing a GTFS-Multi feed
+
+We can also read a GTFS-Multi feed from a `.zip` file stored on disk using the `import_multinet()` function. During reading it will be checked if all required files are present, by internally calling `assert_multinet()`.
+
+```{r import_multinet}
+multinet = import_multinet(net_path)
+names(multinet)
+```
+
+You can reed a reference grid belonging to a GTFS-Multi feed from a `.geotiff` file stored on disk using the `import_grid()` function.
+
+```{r import_grid}
+grid = import_grid(grid_path)
+grid
+```
+
+### Converting a GTFS-Multi feed into a regular GTFS feed
+
+Finally, we can also convert a GTFS-Multi feed into a regular GTFS feed. This requires us to define some settings (all of which have default settings).
+
+First of all, how do we include the GTFS-Multi specific tables in the regular GTFS feed? It is clear that we will model our grid points as if they are regular transit stops. That is, they will be added to the stops table. Also, it is clear that the GTFS-Multi transfer table becomes the regular transfer table. For the access, direct and egress tables, we have more options. Probably it makes most sense to add them to the transfer table, since their tables are already formatted in the same way. That is also set as the default model for all these tables. However, not all GTFS consuming routing applications can handle transfer connections at the beginning or the end of trips, let alone trips that consist *only* of a transfer connection. Therefore, we can also choose to model them as if they where regular transit trips without any in-between stops, and operating at a frequency-based schedule with a very high frequency (e.g. every minute). You can specify the way of modelling separately for the access, direct and egress tables, by setting respectively the `access_model`, `direct_model` and `egress_model` to either `"transfers"` or `"trips"`. If you choose the latter, the frequency at which the trips operate can be given in seconds to respectively the `access_frequency`, `direct_frequency` and `egress_frequency` parameters (all default to 60).
+
+No matter what model you choose, the calculated travel times for separate modes should be reduced to a single travel time per connection, since a regular GTFS feed is not multi-modal. By default, the minimum travel time among all the different modes in a table will be taken. However, you may also specify a subset of modes through respectively the `access_modes`, `direct_modes`, `egress_modes` and `transfer_modes` parameters.
+
+With default settings access, direct and egress tables will be modelled as transfers.
+
+```{r transfers_model}
+gtfs = multinet_to_gtfs(multinet)
+```
+
+```{r view_gtfs_class}
+class(gtfs)
+```
+
+```{r view_gtfs_names}
+names(gtfs)
+```
+
+```{r trips_model}
+gtfs = multinet_to_gtfs(
+  multinet,
+  access_modes = c("bike", "walk"),
+  direct_modes = c("bike", "walk"),
+  egress_modes = "walk",
+  transfer_modes = "walk",
+  access_model = "trips",
+  direct_model = "trips",
+  egress_model = "transfers",
+  access_frequency = 60,
+  direct_frequency = 60
+)
+```
+
+```{r view_gtfs_names_2}
+names(gtfs)
+```

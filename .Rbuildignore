@@ -1,0 +1,15 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^README\.Rmd$
+^LICENSE$
+^CODE_OF_CONDUCT\.md$
+^CONTRIBUTING\.md$
+^CRAN-RELEASE$
+^cran-comments\.md$
+^data-raw$
+^pkgdown$
+^_pkgdown\.yml$
+^\.github$
+^vignettes/website_only$
+^inst/tampere\.gpkg$
+^\.todo$

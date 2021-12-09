@@ -1,0 +1,243 @@
+---
+title: "2. Multi-modal routing with a GTFS-Multi feed"
+author: "Lucas van der Meer, triply GmbH"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{2. Multi-modal routing with a GTFS-Multi feed}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+The `gtfsmulti` package implements a very experimental approach to creating, storing and analyzing multi-modal transportation networks. The first vignette introduced the GTFS-Multi format and showed how to construct, read and write one. In this vignette we will show how to calculate multi-modal routes with a GTFS-Multi feed.
+
+```{r libs, message = FALSE}
+library(gtfsmulti)
+library(mapview)
+library(sf)
+```
+
+## Getting the data
+
+The GTFS-Multi feed for the city center of Tampere, created in the first vignette, is included in the package as an object called `tampere`. It is of class `multinet` and contains all required datasets of a GTFS-Multi feed.
+
+```{r show_data_files}
+names(tampere)
+```
+
+```{r show_data_class}
+class(tampere)
+```
+
+In addition, we will read the reference grid that was used to build this feed. Such a grid will usually be stored as a GeoTIFF file alongside the feed itself. We have it included as external package data.
+
+```{r read_grid}
+grid = import_grid(system.file("tampere.geotiff", package = "gtfsmulti"))
+grid
+```
+
+## Setting the origin location and start time limits
+
+Routes will always be calculated from a single origin to all possible destinations. In practice, this means that the given origin point is first snapped to its nearest grid point, and that from that grid points shortest routes are found to all other grid points. The coordinates of the origin location are supposed to be expressed as longitude and latitude values in coordinate reference system [EPSG:4326](https://epsg.io/4326).
+
+Lets set an origin location somewhere in downtown Tampere:
+
+```{r set_origin}
+origin = st_sfc(st_point(c(23.761215, 61.496725)), crs = 4326)
+```
+
+Internally the function `get_nearest_neighbour()` is used to find the nearest grid point in the GTFS-Multi feed to such an origin location. It returns the index of this grid point as well as the distance in meters between the origin location and the grid point. But as said, this is all done internally.
+
+```{r find_nearest}
+coords = st_coordinates(origin)
+get_nearest_neighbour(coords, tampere$grid[, c("stop_id", "stop_lon", "stop_lat")])
+```
+
+In addition we should define at which time a trip is allowed to start. You can set this as a time interval with an upper and lower bound. The time instants should be given as seconds since midnight. In our examples we will use a time interval between 8:00 AM and 9:00 AM. That is, a trip may start at any time during this time interval. We should also define during which day of the week we want to calculate travel times, as transit timetables may be different between days (if we don't set this automatically the current day is taken).
+
+```{r set_time}
+time = c(8 * 3600, 9 * 3600)
+day = "Monday"
+```
+
+## Finding the shortest travel time
+
+The standard approach is to calculate the shortest possible travel time of a trip between an origin and a destination given that the trip should start somewhere in the given time interval. In `gtfsmulti`, the `multinet_traveltimes()` function is the core multi-modal routing function. It calculates door-to-door travel times that take into account all different parts of a multi-modal trip. The calculation steps are the following:
+
+1. The nearest grid point to the given origin location is found. An imaginary pre-leg of the trip accounts to some extent for the distance between these two points. This distance (as-the-crow-flies) is assumed to be travelled at a fixed speed, specified in the `grid_access_speed` parameter. By default its value is set to a walking-like speed of 5 / 3.6 m/s, i.e. 5 km/h. When setting `include_grid_access = FALSE` the distance between the actual origin location and its nearest grid point is not accounted for and the trip is assumed to effectively start at the nearest grid point. Keep again in mind that no matter what approach you choose, results get less accurate with a coarser grid.
+2. For each transit stop listed in the *stops table* of the GTFS-Multi feed, the shortest multi-modal travel time from the selected grid point to that stop is calculated. This is done by a purely timetable-based routing algorithm. Access trips listed in the *access table* of the GTFS-Multi feed that originate from the selected grid point are included in the transit timetable by modelling them as direct transit trips from the selected grid point towards reachable transit stops, operating on a frequency-based schedule. The frequency of these trips is defined by the `access_frequency` parameter, which by default is set to 60 seconds, i.e. one departure every minute. The length of such an access trip is the minimum travel time for a given access connection among all different modes that are present in the access table. The modes can be filtered by setting the `access_modes` parameter, e.g. `access_modes = "walk"` to include only access times by foot. Possible trips itself may be filtered as well, by setting a maximum allowed travel time through the `access_limit` parameter. During the transit leg of the trip it is possible to transfer from one vehicle to another using a transfer connection listed in the *transfers table* of the GTFS-Multi feed. The travel time of such a transfer connection is the minimum travel time among all different modes that are present in the transfer table. The modes can be filtered by setting the `transfer_modes` parameter, e.g. `transfer_modes = "walk"` to include only transfer times by foot. Possible trips itself may be filtered as well, by setting a maximum allowed travel time through the `transfer_limit` parameter. For efficiency reasons, the routing algorithm in this phase has an upper bound defined, meaning that if the cumulative travel time of a trip from the selected grid point exceeds this upper bound before the transit stop is reached, the search for a route to that stop is terminated and the transit stop is marked as unreachable. This upper bound can be defined through the `router_timeout` parameter and defaults to 60 * 60 seconds, i.e. 1 hour.
+3. For each destination grid point (i.e. all grid points except the one selected as origin) listed in the *grid table* of the GTFS-Multi feed, multi-modal travel times from the selected origin grid point to that destination grid point are calculated. This is done by extracting travel times of egress trips that lead to the destination grid point from the *egress table* of the GTFS-Multi feed, and adding those to the travel times from the origin grid point towards transit stops as calculated in the previous step. For a destination grid point this will often result in a set of multiple travel times (since there may be multiple egress trips leading to the same grid point), of which only the shortest one is preserved. The travel time of an egress connection is the minimum travel time among all different modes that are present in the egress table. The modes can be filtered by setting the `egress_modes` parameter, e.g. `egress_modes = "walk"` to include only egress times by foot. Possible trips itself may be filtered as well, by setting a maximum allowed travel time through the `egress_limit` parameter.
+4. For each destination grid point listed in the *grid table* of the GTFS-Multi feed, the shortest multi-modal travel time (as calculated in the step above) is compared to the travel time of a single-modal direct trip listed in the *direct table* of the GTFS-Multi feed. The travel time of such a direct connection is the minimum travel time among all different modes that are present in the direct table. The modes can be filtered by setting the `direct_modes` parameter, e.g. `direct_modes = "bike"` to include only direct times by bicycle. Possible trips itself may be filtered as well, by setting a maximum allowed travel time through the `direct_limit` parameter. The minimum between the multi-modal travel times and the single-modal travel time is the returned shortest travel time from the selected origin grid point to the destination grid point.
+
+Since all access, egress, direct and transfer times are already pre-calculated and stored in the GTFS Multi-feed, there is no street network routing needed anymore at this stage. The multi-modal travel times are calculated with a purely timetable-based routing algorithm. For that, `multinet_traveltimes()` relies on `gtfsrouter::gtfs_traveltimes()`, a function from the great [gtfsrouter](https://github.com/ATFutures/gtfs-router) package that implements a recently developed algorithm for efficient one-to-many routing in transit networks.
+
+An example:
+
+```{r shortest_times}
+short = multinet_traveltimes(tampere, origin, time, day = day, egress_modes = "walk")
+short
+```
+
+As can be seen the function returns the grid table of the GTFS-Multi feed, with an additional column containing for each grid point the shortest travel time between the given origin location and that grid point. Grid points that could not be reached get assigned a travel time of `NA`.
+
+We can use `create_traveltime_grid()` to write these travel times as values to the pixels of the reference grid. Such travel time grids are easy to visualize, and later on it will be easy to combine them for example with data about population, jobs or service locations in order to calculate accessibility metrics.
+
+```{r shortest_grid}
+short_grid = create_traveltime_grid(short, grid)
+short_grid
+```
+
+```{r plot_shortest_times, fig.width = 7, fig.height = 4}
+# Remove outliers for clearer visualization.
+drop_outliers = function(x) { x[[1]][x[[1]] > quantile(x[[1]], 0.95, na.rm = TRUE)] = NA; x }
+short_grid = drop_outliers(short_grid)
+
+# Get bounding box of reference grid.
+bbox = st_as_sfc(st_bbox(grid))
+
+mapview(bbox, alpha.regions = 0, alpha = 1, lwd = 3) +
+  mapview(short_grid, layer.name = "travel time (s)", na.color = NA) +
+  mapview(origin, col.regions = "black", alpha.regions = 1, alpha = 0, cex  = 3)
+```
+
+Travel time grids can be imported and exported from/to GeoTIFF files using respectively the `import_grid()` and `export_grid()` functions.
+
+## Doing it the R5 way
+
+The shortest possible travel time is not always a good metric to evaluate the quality of transit accessibility, because it does not tell you anything about the frequency of the service. There might be a very good bus connection that only operates once a day. When reporting only the shortest travel time to a destination along this connection the transit accessibility will be evaluated as being of very high quality. However, most of the day you might be hardly able to reach your destination by transit within an acceptable travel time. Hence, frequency is an important evaluation measure as well.
+
+That is the reason why [Conveyal](https://docs.conveyal.com/analysis/methodology) with their R5 routing engine takes a different approach to travel time calculations. They calculate the travel time of multi-modal trips from a given origin to all destinations with a *fixed* start time. They iteratively repeat that calculation for *every minute* within the window of allowed starting times. In that way they obtain a distribution of travel times, which allows to analyze frequency of service.
+
+Using `multinet_traveltimes()` you can do the same by setting `iterate = TRUE`. This will run the travel time calculation explained in the previous section iteratively, and during each iteration fixing the start time of the trips by forwarding a time period that has the same upper as lower bound. The start times that are iterated over are defined by the `access_frequency` parameter. By default this is set to 60 seconds, i.e. every minute.
+
+```{r all_times}
+all = multinet_traveltimes(
+  tampere,
+  origin,
+  time,
+  day = day,
+  egress_modes = "walk",
+  iterate = TRUE
+)
+```
+
+```{r all_times_names}
+names(all)[grep("travel_time", names(all))]
+```
+
+As can be seen the function returns still returns the grid table of the GTFS-Multi feed, but now with many additional columns containing for each grid point the shortest travel time between the given origin location and that grid point fixed at a given start time. Since we used a time interval of 1 hour with an access frequency of 1 minute, we obtain 61 different travel time values for each grid point. If we want a lower level of detail to gain performance, we can change the value of the `access_frequency` parameter, e.g. to every 10 minutes.
+
+```{r few_times}
+few = multinet_traveltimes(
+  tampere,
+  origin,
+  time,
+  day = day,
+  egress_modes = "walk",
+  iterate = TRUE,
+  access_frequency = 600
+)
+```
+
+```{r few_times_names}
+names(few)[grep("travel_time", names(few))]
+```
+
+The travel time grid we create with all these calculated travel times has an additional dimension next to the two spatial dimensions. This *time* dimension has one coordinate per iterated start time.
+
+```{r all_grid}
+all_grid = create_traveltime_grid(all, grid)
+all_grid
+```
+
+Following the Conveyal approach, we can reduce this full distribution of travel time values to a set of given [percentile](https://docs.conveyal.com/analysis/methodology#time-percentile) values. Different percentile values represent different views on what high quality transit accessibility means. For example, for a certain destination, the value of the travel time distribution at a percentile value close to 0 will be similar to the shortest possible travel time towards this destination during the given interval. It is appropriate for people that are flexible enough to fit their time schedule of travel to the transit time schedule, and thus don't care too much about the frequency of the service. At the other side, the value of the travel time distribution at a percentile value close to 100 gives the time it will *at least* take you to reach the origin. It is appropriate for people that want to be able to leave at anytime, not even knowing the exact transit schedule. To get a balance between these two extremes, you may use any percentile value in between 0 and 100.
+
+The `reduce_to_percentiles()` function lets you reduce a dense travel time grid to, for each pixel, a set of travel times at different percentile values of the full distribution. You can choose as many percentile values as you want. The result is a travel time grid in which the original *time* dimension is replaced by a *percentile* dimension, with one coordinate per selected percentile value.
+
+> **NOTE**</br>
+> You can also call `reduce_to_percentiles()` directly on the expanded grid table returned by `multinet_traveltimes()`. This will replace the original travel time columns by travel time percentile columns.
+
+An example:
+
+```{r prc_grid}
+prc_grid = reduce_to_percentiles(all_grid, c(5, 95))
+prc_grid
+```
+
+Visualizing different travel times at different percentile values clearly show the differences (note the different color scales in the different plots). The higher the percentile value, the higher the travel times. Note also how direct single-modal travel times become more prevalent at higher percentile values. These single-modal travel times are constant during the full time interval, and may at higher percentile values well be shorter than multi-modal travel times that are bound to transit schedules, especially if the transit services don't operate at high frequency.
+
+```{r plot_prc_05, fig.width = 7, fig.height = 4}
+# Get 5th percentile values.
+p05_grid = split(prc_grid, "percentile")[1]
+
+# Remove outliers for clearer visualization.
+p05_grid = drop_outliers(p05_grid)
+
+mapview(bbox, alpha.regions = 0, alpha = 1, lwd = 3) +
+  mapview(p05_grid, layer.name = "travel time (s)", na.color = NA) +
+  mapview(origin, col.regions = "black", alpha.regions = 1, alpha = 0, cex  = 3)
+```
+
+```{r plot_prc_95, fig.width = 7, fig.height = 4}
+# Get 95th percentile values.
+p95_grid = split(prc_grid, "percentile")[2]
+
+# Remove outliers for clearer visualization.
+p95_grid = drop_outliers(p95_grid)
+
+mapview(bbox, alpha.regions = 0, alpha = 1, lwd = 3) +
+  mapview(p95_grid, layer.name = "travel time (s)", na.color = NA) +
+  mapview(origin, col.regions = "black", alpha.regions = 1, alpha = 0, cex  = 3)
+```
+Results will look different if we for example restrict access trips to be done by foot, limit both access and egress trips to be maximum 5 minutes, and don't include direct trips at all.
+
+```{r all_times_limited}
+all = multinet_traveltimes(
+  tampere,
+  origin,
+  time,
+  day = day,
+  access_modes = "walk",
+  direct_modes = NA,
+  egress_modes = "walk",
+  access_limit = 5 * 60,
+  egress_limit = 5 * 60,
+  iterate = TRUE
+)
+
+all_grid = create_traveltime_grid(all, grid)
+prc_grid = reduce_to_percentiles(all_grid, c(5, 95))
+```
+
+```{r plot_prc_05_limited, fig.width = 7, fig.height = 4}
+# Get 5th percentile values.
+p05_grid = split(prc_grid, "percentile")[1]
+
+# Remove outliers for clearer visualization.
+p05_grid = drop_outliers(p05_grid)
+
+mapview(bbox, alpha.regions = 0, alpha = 1, lwd = 3) +
+  mapview(p05_grid, layer.name = "travel time (s)", na.color = NA) +
+  mapview(origin, col.regions = "black", alpha.regions = 1, alpha = 0, cex  = 3)
+```
+
+```{r plot_prc_95_limited, fig.width = 7, fig.height = 4}
+# Get 95th percentile values.
+p95_grid = split(prc_grid, "percentile")[2]
+
+# Remove outliers for clearer visualization.
+p95_grid = drop_outliers(p95_grid)
+
+mapview(bbox, alpha.regions = 0, alpha = 1, lwd = 3) +
+  mapview(p95_grid, layer.name = "travel time (s)", na.color = NA) +
+  mapview(origin, col.regions = "black", alpha.regions = 1, alpha = 0, cex  = 3)
+```
