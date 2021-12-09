@@ -4,8 +4,8 @@
 #' datasets as `.txt` files.
 #'
 #' @return An object of class `multinet`, which is a list of multiple
-#' [data.table::data.table()] objects corresponding to the different dataset
-#' files of a GTFS-Multi feed.
+#' [`data.table`][data.table::data.table()] objects corresponding to the
+#' different dataset files of a GTFS-Multi feed.
 #'
 #' @export
 import_multinet = function(path) {
@@ -29,8 +29,8 @@ import_multinet = function(path) {
 #' Write a GTFS-Multi feed to disk
 #'
 #' @param x An object of class `multinet`, which is a list of multiple
-#' [data.table::data.table()] objects corresponding to the different dataset
-#' files of a GTFS-Multi feed.
+#' [`data.table`][data.table::data.table()] objects corresponding to the
+#' different dataset files of a GTFS-Multi feed.
 #'
 #' @param path Path to a `.zip` file where the GTFS-Multi feed should be
 #' written to.
@@ -80,8 +80,8 @@ assert_multinet = function(x) {
 #' Convert a GTFS-Multi feed to a regular GTFS feed
 #'
 #' @param x An object of class `multinet`, which is a list of multiple
-#' [data.table::data.table()] objects corresponding to the different dataset
-#' files of a GTFS-Multi feed.
+#' [`data.table`][data.table::data.table()] objects corresponding to the
+#' different dataset files of a GTFS-Multi feed.
 #'
 #' @param access_modes Vector of transport modes to consider for access trips,
 #' i.e. trips from grid points towards transit stop locations.
@@ -157,9 +157,9 @@ assert_multinet = function(x) {
 #' seconds since midnight? If `FALSE`, they are stored as regular
 #' time strings in format "h:m:s". Defaults to `FALSE`.
 #'
-#' @return An object of class [gtfs][gtfsio::import_gtfs()], which is a
-#' list of multiple [data.table::data.table()] objects corresponding
-#' to the different dataset files of a GTFS feed.
+#' @return An object of class [`gtfs`][gtfsio::import_gtfs()], which is a
+#' list of multiple [`data.table`][data.table::data.table()] objects
+#' corresponding to the different dataset files of a GTFS feed.
 #'
 #' @export
 multinet_to_gtfs = function(x,

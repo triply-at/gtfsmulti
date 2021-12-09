@@ -8,10 +8,10 @@ create_grid_table(grid)
 }
 \arguments{
 \item{grid}{The reference grid as object of class
-\link[stars:st_as_stars]{stars}.}
+\code{\link[stars:st_as_stars]{stars}}.}
 }
 \value{
-A \code{\link[data.table:data.table]{data.table::data.table()}} object. See details.
+A \code{\link[data.table:data.table]{data.table}} object. See details.
 }
 \description{
 Create a grid table for a reference grid

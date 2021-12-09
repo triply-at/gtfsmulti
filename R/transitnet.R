@@ -3,15 +3,16 @@
 #' @param path Path to a `.zip` file containing all required GTFS
 #' datasets as `.txt` files.
 #'
-#' @param extent The area of interest as object of class [sf::sf()]. Only
-#' transit stop locations inside this area will be imported. Trips, routes,
-#' agencies, services and if present also transfers, pathways and shapes will
-#' be filtered accordingly, such that only those with a relation to the
-#' selected stops are imported. If `NULL`, the complete GTFS feed is imported.
+#' @param extent The area of interest as object of class [`sf`][sf::sf()] or
+#' [`sfc`][sf::st_as_sfc()]. Only transit stop locations inside this area will
+#' be imported. Trips, routes, agencies, services and if present also
+#' transfers, pathways and shapes will be filtered accordingly, such that only
+#' those with a relation to the selected stops are imported. If `NULL`, the
+#' complete GTFS feed is imported.
 #'
-#' @return An object of class [gtfs][gtfsio::import_gtfs()], which is a
-#' list of multiple [data.table::data.table()] objects corresponding
-#' to the different dataset files of a GTFS feed.
+#' @return An object of class [`gtfs`][gtfsio::import_gtfs()], which is a
+#' list of multiple [`data.table`][data.table::data.table()] objects
+#' corresponding to the different dataset files of a GTFS feed.
 #'
 #' @export
 import_transitnet = function(path, extent = NULL) {

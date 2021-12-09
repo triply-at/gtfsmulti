@@ -7,23 +7,23 @@
 as_multinet(x)
 }
 \arguments{
-\item{x}{A list of \code{\link[data.table:data.table]{data.table::data.table()}} objects each correspoding to
-a dataset file of a GTFS-Multi feed.}
+\item{x}{A list of \code{\link[data.table:data.table]{data.table}} objects each
+correspoding to a dataset file of a GTFS-Multi feed.}
 }
 \value{
 An object of class \code{multinet}, which is a list of multiple
-\code{\link[data.table:data.table]{data.table::data.table()}} objects corresponding to the different dataset
-files of a GTFS-Multi feed.
+\code{\link[data.table:data.table]{data.table}} objects corresponding to the
+different dataset files of a GTFS-Multi feed.
 }
 \description{
 Create a multinet object from a list of data tables
 }
 \note{
 Parameter \code{x} can also be an object of class
-\link[gtfsio:import_gtfs]{gtfs}, since this is nothing more than a list of
-\code{data.table} objects. However, the GTFS-Multi specific tables should be
-present in the object. These are the grid, access, direct, egress
-and transfer tables. Use \code{\link[=add_grid_table]{add_grid_table()}}, \code{\link[=add_access_tables]{add_access_tables()}},
-\code{\link[=add_direct_tables]{add_direct_tables()}}, \code{\link[=add_egress_tables]{add_egress_tables()}} and
+\code{\link[gtfsio:import_gtfs]{gtfs}}, since this is nothing more than a list of
+\code{\link[data.table:data.table]{data.table}} objects. However, the GTFS-Multi
+specific tables should be present in the object. These are the grid,
+access, direct, egress and transfer tables. Use \code{\link[=add_grid_table]{add_grid_table()}},
+\code{\link[=add_access_tables]{add_access_tables()}}, \code{\link[=add_direct_tables]{add_direct_tables()}}, \code{\link[=add_egress_tables]{add_egress_tables()}} and
 \code{\link[=add_transfer_tables]{add_transfer_tables()}} to add them to a regular GTFS feed.
 }

@@ -5,7 +5,7 @@
 #' @param quiet Boolean. If `FALSE`, display progress information on screen.
 #' Defaults to `FALSE`.
 #'
-#' @return The grid as an object of class [stars][stars::st_as_stars()].
+#' @return The grid as an object of class [`stars`][stars::st_as_stars()].
 #'
 #' @seealso [create_reference_grid()], [create_traveltime_grid()]
 #'
@@ -16,7 +16,7 @@ import_grid = function(path, quiet = FALSE) {
 
 #' Write a grid to disk
 #'
-#' @param x The grid as object of class [stars][stars::st_as_stars()].
+#' @param x The grid as object of class [`stars`][stars::st_as_stars()].
 #'
 #' @param path Path to a `.geotiff` or `tiff` file where the grid
 #' should be written to.
@@ -37,7 +37,8 @@ export_grid = function(x, path, layer = 1, quiet = FALSE) {
 #' Create a reference grid over the spatial extent of the analysis
 #'
 #' @param extent The spatial extent of the analysis as a single `POLYGON`
-#' geometry in either object of class [sf::sf()] or class [sfc][sf::st_sfc()].
+#' geometry in either object of class [`sf`][sf::sf()] or
+#' [`sfc`][sf::st_sfc()].
 #'
 #' @param cellsize Cellsize in units of `output_crs` (usually meters). Cells
 #' are always squares, i.e. the width and height of the cells are both equal
@@ -47,7 +48,7 @@ export_grid = function(x, path, layer = 1, quiet = FALSE) {
 #' [sf::st_crs()]. By default equal to the CRS of `extent`.
 #'
 #' @return The reference grid as an object of class
-#' [stars][stars::st_as_stars()].
+#' [`stars`][stars::st_as_stars()].
 #'
 #' @seealso [create_extent()], [create_grid_table()]
 #'
@@ -60,15 +61,15 @@ create_reference_grid = function(extent, cellsize, output_crs = sf::st_crs(exten
 #' Mask the reference grid by a spatial vector layer
 #'
 #' @param grid The reference grid as object of class
-#' [stars][stars::st_as_stars()].
+#' [`stars`][stars::st_as_stars()].
 #'
-#' @param mask Object of class [sf::sf()] or [sfc][sf::st_sfc()] to use as
-#' mask.
+#' @param mask Object of class [`sf`][sf::sf()] or [`sfc`][sf::st_sfc()] to
+#' use as mask.
 #'
 #' @param predicate Geometric binary predicate to use for masking. See
-#' [sf::geos_binary_pred].
+#' [`sf::geos_binary_pred`].
 #'
-#' @return The updated grid as object of class [stars][stars::st_as_stars()].
+#' @return The updated grid as object of class [`stars`][stars::st_as_stars()].
 #' The updated grid has the same dimensions as the original grid, but pixel
 #' values are set to `NA` if the specified spatial relation (as described by
 #' `predicate`) between that pixel and the mask is evaluated to `FALSE`.
@@ -88,12 +89,13 @@ mask_grid = function(grid, mask, predicate = sf::st_intersects) {
 #' Write travel times as attributes to a grid
 #'
 #' @param x The object returned by [multinet_traveltimes()], i.e. the grid
-#' table of a GTFS-Multi feed as object of class [data.table::data.table()]
-#' with one or multiple columns containing calculated travel time values.
-#' These columns should have names that start with "travel_time".
+#' table of a GTFS-Multi feed as object of class
+#' [`data.table`][data.table::data.table()] with one or multiple columns
+#' containing calculated travel time values. These columns should have names
+#' that start with "travel_time".
 #'
 #' @param grid Reference grid of `x` as object of class
-#' [stars][stars::st_as_stars()].
+#' [`stars`][stars::st_as_stars()].
 #'
 #' @param dimname If `x` contains multiple columns containing travel time
 #' values, they will be stored along an additional dimension. How should this
@@ -101,8 +103,8 @@ mask_grid = function(grid, mask, predicate = sf::st_intersects) {
 #' refer to different departure times.
 #'
 #' @return The travel time grid as an object of class
-#' [stars][stars::st_as_stars()]. This grid has the same spatial dimensions as
-#' `x` but contains only travel time values for each pixel.
+#' [`stars`][stars::st_as_stars()]. This grid has the same spatial dimensions
+#' as `x` but contains only travel time values for each pixel.
 #'
 #' @seealso [multinet_traveltimes()], [create_reference_grid()]
 #'

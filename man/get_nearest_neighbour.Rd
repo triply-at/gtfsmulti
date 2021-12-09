@@ -10,11 +10,11 @@ get_nearest_neighbour(origin, candidates)
 \item{origin}{A numeric vector of length two containing respectively
 the longitude and latitude coordinate of the origin location.}
 
-\item{candidates}{A \code{\link[=data.frame]{data.frame()}} or similar representing the set of
-possible neighbour locations to choose from. Should have only three columns,
-with the first column containing unique indices for each location, and the
-second and third column containing respectively the longitude and latitude
-coordinates of each location.}
+\item{candidates}{A \code{\link[=data.frame]{data.frame}} or similar representing the
+set of possible neighbour locations to choose from. Should have only three
+columns, with the first column containing unique indices for each location,
+and the second and third column containing respectively the longitude and
+latitude coordinates of each location.}
 }
 \value{
 A list of length two with element \emph{idx} containing the index of the

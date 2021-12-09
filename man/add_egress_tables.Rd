@@ -7,21 +7,22 @@
 add_egress_tables(gtfs, ...)
 }
 \arguments{
-\item{gtfs}{An object of class \link[gtfsio:import_gtfs]{gtfs}.}
+\item{gtfs}{An object of class \code{\link[gtfsio:import_gtfs]{gtfs}}.}
 
 \item{...}{One or more keyword arguments, with the key being the name of a
 specific transport mode, and the value being a
-\code{\link[data.table:data.table]{data.table::data.table()}} object containing the travel times
-between transit stops and grid pointsfor that mode. Such a table can be
+\code{\link[data.table:data.table]{data.table}} object containing the travel times
+between transit stops and grid points for that mode. Such a table can be
 created with \code{\link[=create_transfer_table]{create_transfer_table()}}, using transit stop
 locations as origins and grid points as destinations.}
 }
 \value{
 An object of class \link[gtfsio:import_gtfs]{gtfs}. This is a
-list of multiple \code{\link[data.table:data.table]{data.table::data.table()}} objects corresponding
-to the different dataset files of a GTFS feed. In addition to those, the
-returned object will contain a \code{data.table} representing the egress
-trips of a GTFS-Multi feed. See details.
+list of multiple \code{\link[data.table:data.table]{data.table}} objects
+corresponding to the different dataset files of a GTFS feed. In addition to
+those, the returned object will contain a
+\code{\link[data.table:data.table]{data.table}} representing the egress trips of a
+GTFS-Multi feed. See details.
 }
 \description{
 Add an egress table to a GTFS feed

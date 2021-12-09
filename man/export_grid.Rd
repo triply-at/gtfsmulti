@@ -7,7 +7,7 @@
 export_grid(x, path, layer = 1, quiet = FALSE)
 }
 \arguments{
-\item{x}{The grid as object of class \link[stars:st_as_stars]{stars}.}
+\item{x}{The grid as object of class \code{\link[stars:st_as_stars]{stars}}.}
 
 \item{path}{Path to a \code{.geotiff} or \code{tiff} file where the grid
 should be written to.}

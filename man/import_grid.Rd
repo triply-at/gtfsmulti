@@ -13,7 +13,7 @@ import_grid(path, quiet = FALSE)
 Defaults to \code{FALSE}.}
 }
 \value{
-The grid as an object of class \link[stars:st_as_stars]{stars}.
+The grid as an object of class \code{\link[stars:st_as_stars]{stars}}.
 }
 \description{
 Import a grid from a GeoTIFF file

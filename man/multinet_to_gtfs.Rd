@@ -21,8 +21,8 @@ multinet_to_gtfs(
 }
 \arguments{
 \item{x}{An object of class \code{multinet}, which is a list of multiple
-\code{\link[data.table:data.table]{data.table::data.table()}} objects corresponding to the different dataset
-files of a GTFS-Multi feed.}
+\code{\link[data.table:data.table]{data.table}} objects corresponding to the
+different dataset files of a GTFS-Multi feed.}
 
 \item{access_modes}{Vector of transport modes to consider for access trips,
 i.e. trips from grid points towards transit stop locations.
@@ -99,9 +99,9 @@ seconds since midnight? If \code{FALSE}, they are stored as regular
 time strings in format "h:m:s". Defaults to \code{FALSE}.}
 }
 \value{
-An object of class \link[gtfsio:import_gtfs]{gtfs}, which is a
-list of multiple \code{\link[data.table:data.table]{data.table::data.table()}} objects corresponding
-to the different dataset files of a GTFS feed.
+An object of class \code{\link[gtfsio:import_gtfs]{gtfs}}, which is a
+list of multiple \code{\link[data.table:data.table]{data.table}} objects
+corresponding to the different dataset files of a GTFS feed.
 }
 \description{
 Convert a GTFS-Multi feed to a regular GTFS feed

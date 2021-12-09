@@ -46,9 +46,10 @@ DEFAULT_TAGS = c(
 #' @param path Path to a `.osm.pbf` file containing the extracted OpenStreetMap
 #' data for at least the extent of the area of interest.
 #'
-#' @param extent The area of interest as object of class [sf::sf()]. Only
-#' streets that intersect this area will be imported. If `NULL`, streets are
-#' imported for the complete OpenStreetMap extract.
+#' @param extent The area of interest as object of class [`sf`][sf::sf()] or
+#' [`sfc`][sf::st_as_sfc()]. Only streets that intersect this area will be
+#' imported. If `NULL`, streets are imported for the complete OpenStreetMap
+#' extract.
 #'
 #' @param clip Boolean. If `TRUE`, linestrings will be clipped by the given
 #' extent. If `FALSE`, linestrings that intersect the given extent will be
@@ -66,7 +67,7 @@ DEFAULT_TAGS = c(
 #' @param quiet Boolean. If `FALSE`, display progress information on screen.
 #' Defaults to `FALSE`.
 #'
-#' @return An object of class [sf::sf()] with `LINESTRING` or
+#' @return An object of class [`sf`][sf::sf()] with `LINESTRING` or
 #' `MULTILINESTRING` geometries.
 #'
 #' @export
@@ -115,18 +116,18 @@ import_streetnet = function(path, extent = NULL, clip = FALSE,
 
 #' Build a routable graph from a set of linestrings
 #'
-#' @param x An object of class [sf::sf()] with `LINESTRING` or
+#' @param x An object of class [`sf`][sf::sf()] with `LINESTRING` or
 #' `MULTILINESTRING` geometries.
 #'
 #' @param protect Set of points that protect their nearest linestring vertex
 #' from being smoothed (see Details). That is, the closest linestring vertices
 #' to these points are guaranteed to be a node in the resulting graph, even if
 #' they are neither a terminal node nor a junction node. May be given either as
-#' an object of class [sf::sf()] with `POINT` geometries, or as a two-column
-#' numeric matrix containing respectively the longitude and latitude
-#' coordinates of the points.
+#' an object of class [`sf`][sf::sf()] or [`sfc`][sf::st_as_sfc()] with `POINT`
+#' geometries, or as a two-column numeric matrix containing respectively the
+#' longitude and latitude coordinates of the points.
 #'
-#' @return An object of class [sfnetworks::sfnetwork()].
+#' @return An object of class [`sfnetworks`][sfnetworks::sfnetwork()].
 #'
 #' @details Graph building is implemented as a step-wise process. The graph
 #' will be directed, so first all linestring geometries of `x` that are *not*
@@ -183,13 +184,14 @@ build_streetnet = function(x, protect = NULL) {
 
 #' Calculate travel times on a street network
 #'
-#' @param x The street network as object of class [sfnetworks::sfnetwork()],
-#' [dodgr::dodgr_streetnet()] or
-#' [dodgr::dodgr_streetnet_sc()][dodgr::dodgr_streetnet()].
+#' @param x The street network as an object of class
+#' [`sfnetworks`][sfnetworks::sfnetwork()],
+#' [`dodgr_streetnet`][dodgr::dodgr_streetnet()] or
+#' [`dodgr_streetnet_sc`][dodgr::dodgr_streetnet_sc()].
 #'
-#' @param od_pairs A [data.table::data.table()] object in which each row
-#' contains the origin and destination location of a route for which the travel
-#' time needs to be calculated. The table should contain the columns
+#' @param od_pairs A [`data.table`][data.table::data.table()] object in which
+#' each row contains the origin and destination location of a route for which
+#' the travel time needs to be calculated. The table should contain the columns
 #' *from_lon*, *from_lat*, *to_lon* and *to_lat* containing respectively the
 #' longitude and latitude coordinates of respectively the origin and
 #' destination.

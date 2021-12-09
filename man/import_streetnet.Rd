@@ -17,9 +17,10 @@ import_streetnet(
 \item{path}{Path to a \code{.osm.pbf} file containing the extracted OpenStreetMap
 data for at least the extent of the area of interest.}
 
-\item{extent}{The area of interest as object of class \code{\link[sf:sf]{sf::sf()}}. Only
-streets that intersect this area will be imported. If \code{NULL}, streets are
-imported for the complete OpenStreetMap extract.}
+\item{extent}{The area of interest as object of class \code{\link[sf:sf]{sf}} or
+\code{\link[sf:st_as_sfc]{sfc}}. Only streets that intersect this area will be
+imported. If \code{NULL}, streets are imported for the complete OpenStreetMap
+extract.}
 
 \item{clip}{Boolean. If \code{TRUE}, linestrings will be clipped by the given
 extent. If \code{FALSE}, linestrings that intersect the given extent will be
@@ -38,7 +39,7 @@ attribute columns in the imported data. Defaults to \link{DEFAULT_TAGS}.}
 Defaults to \code{FALSE}.}
 }
 \value{
-An object of class \code{\link[sf:sf]{sf::sf()}} with \code{LINESTRING} or
+An object of class \code{\link[sf:sf]{sf}} with \code{LINESTRING} or
 \code{MULTILINESTRING} geometries.
 }
 \description{

@@ -7,17 +7,18 @@
 add_grid_table(gtfs, grid)
 }
 \arguments{
-\item{gtfs}{An object of class \link[gtfsio:import_gtfs]{gtfs}.}
+\item{gtfs}{An object of class \code{\link[gtfsio:import_gtfs]{gtfs}}.}
 
-\item{grid}{A \code{\link[data.table:data.table]{data.table::data.table()}} object created with
+\item{grid}{A \code{\link[data.table:data.table]{data.table}} object created with
 created with \code{\link[=create_grid_table]{create_grid_table()}}.}
 }
 \value{
-An object of class \link[gtfsio:import_gtfs]{gtfs}. This is a
-list of multiple \code{\link[data.table:data.table]{data.table::data.table()}} objects corresponding
-to the different dataset files of a GTFS feed. In addition to those, the
-returned object will contain a \code{data.table} representing the reference
-grid of a GTFS-Multi feed. See details.
+An object of class \code{\link[gtfsio:import_gtfs]{gtfs}}. This is a
+list of multiple \code{\link[data.table:data.table]{data.table}} objects
+corresponding to the different dataset files of a GTFS feed. In addition to
+those, the returned object will contain a
+\code{\link[data.table:data.table]{data.table}} representing the reference grid of
+a GTFS-Multi feed. See details.
 }
 \description{
 Add a grid table to a GTFS feed

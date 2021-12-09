@@ -8,16 +8,16 @@ mask_grid(grid, mask, predicate = sf::st_intersects)
 }
 \arguments{
 \item{grid}{The reference grid as object of class
-\link[stars:st_as_stars]{stars}.}
+\code{\link[stars:st_as_stars]{stars}}.}
 
-\item{mask}{Object of class \code{\link[sf:sf]{sf::sf()}} or \link[sf:sfc]{sfc} to use as
-mask.}
+\item{mask}{Object of class \code{\link[sf:sf]{sf}} or \code{\link[sf:sfc]{sfc}} to
+use as mask.}
 
 \item{predicate}{Geometric binary predicate to use for masking. See
-\link[sf:geos_binary_pred]{sf::geos_binary_pred}.}
+\code{\link[sf:geos_binary_pred]{sf::geos_binary_pred}}.}
 }
 \value{
-The updated grid as object of class \link[stars:st_as_stars]{stars}.
+The updated grid as object of class \code{\link[stars:st_as_stars]{stars}}.
 The updated grid has the same dimensions as the original grid, but pixel
 values are set to \code{NA} if the specified spatial relation (as described by
 \code{predicate}) between that pixel and the mask is evaluated to \code{FALSE}.

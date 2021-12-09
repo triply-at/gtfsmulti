@@ -22,13 +22,14 @@ streetnet_traveltimes(x, od_pairs, ...)
 \method{streetnet_traveltimes}{dodgr_streetnet_sc}(x, od_pairs, ...)
 }
 \arguments{
-\item{x}{The street network as object of class \code{\link[sfnetworks:sfnetwork]{sfnetworks::sfnetwork()}},
-\code{\link[dodgr:dodgr_streetnet]{dodgr::dodgr_streetnet()}} or
-\link[dodgr:dodgr_streetnet]{dodgr::dodgr_streetnet_sc()}.}
+\item{x}{The street network as an object of class
+\code{\link[sfnetworks:sfnetwork]{sfnetworks}},
+\code{\link[dodgr:dodgr_streetnet]{dodgr_streetnet}} or
+\code{\link[dodgr:dodgr_streetnet_sc]{dodgr_streetnet_sc}}.}
 
-\item{od_pairs}{A \code{\link[data.table:data.table]{data.table::data.table()}} object in which each row
-contains the origin and destination location of a route for which the travel
-time needs to be calculated. The table should contain the columns
+\item{od_pairs}{A \code{\link[data.table:data.table]{data.table}} object in which
+each row contains the origin and destination location of a route for which
+the travel time needs to be calculated. The table should contain the columns
 \emph{from_lon}, \emph{from_lat}, \emph{to_lon} and \emph{to_lat} containing respectively the
 longitude and latitude coordinates of respectively the origin and
 destination.}

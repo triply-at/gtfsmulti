@@ -7,23 +7,24 @@
 get_od_pairs(origins, destinations, d_limit = Inf)
 }
 \arguments{
-\item{origins}{A \code{\link[=data.frame]{data.frame()}} or similar representing the origin
-locations. Should have only three columns, with the first column containing
-unique indices for each location, and the second and third column containing
-respectively the longitude and latitude coordinates of each location.}
-
-\item{destinations}{A \code{\link[=data.frame]{data.frame()}} or similar representing the possible
-destination locations. Should have only three columns, with the first column
+\item{origins}{A \code{\link[=data.frame]{data.frame}} or similar representing the
+origin locations. Should have only three columns, with the first column
 containing unique indices for each location, and the second and third column
 containing respectively the longitude and latitude coordinates of each
 location.}
+
+\item{destinations}{A \code{\link[=data.frame]{data.frame}} or similar representing
+the possible destination locations. Should have only three columns, with the
+first column containing unique indices for each location, and the second and
+third column containing respectively the longitude and latitude coordinates
+of each location.}
 
 \item{d_limit}{Upper distance limit (as-the-crow-flies) in meters to pair
 an origin with a destination. Defaults to \code{Inf}, meaning that each origin
 will be paired with all possible destinations.}
 }
 \value{
-A \code{\link[data.table:data.table]{data.table::data.table()}} object containing one
+A \code{\link[data.table:data.table]{data.table}} object containing one
 origin-destination pair per row. The table has six columns named \emph{from},
 \emph{to}, \emph{from_lon}, \emph{from_lat}, \emph{to_lon} and \emph{to_lat}, with the first two
 containing the indices of respectively the origin and destination, and the

@@ -103,7 +103,7 @@ specs = data.frame(
 
 names(specs) = c("Field Name", "Type", "Required", "Description")
 
-kableExtra::kable_styling(knitr::kable(specs), bootstrap_options = c("bordered", "condensed"))
+kableExtra::kable_styling(knitr::kable(specs), bootstrap_options = c("striped"))
 ```
 
 ### access.txt
@@ -142,7 +142,7 @@ specs = data.frame(
 
 names(specs) = c("Field Name", "Type", "Required", "Description")
 
-kableExtra::kable_styling(knitr::kable(specs), bootstrap_options = c("bordered", "condensed"))
+kableExtra::kable_styling(knitr::kable(specs), bootstrap_options = c("striped"))
 ```
 
 ### direct.txt
@@ -220,7 +220,7 @@ specs = data.frame(
 
 names(specs) = c("Field Name", "Type", "Required", "Description")
 
-kableExtra::kable_styling(knitr::kable(specs), bootstrap_options = c("bordered", "condensed"))
+kableExtra::kable_styling(knitr::kable(specs), bootstrap_options = c("striped"))
 ```
 
 ### transfers.txt
@@ -259,7 +259,7 @@ specs = data.frame(
 
 names(specs) = c("Field Name", "Type", "Required", "Description")
 
-kableExtra::kable_styling(knitr::kable(specs))
+kableExtra::kable_styling(knitr::kable(specs), bootstrap_options = c("striped"))
 ```
 
 ## Construction

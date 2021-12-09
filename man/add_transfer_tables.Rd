@@ -7,21 +7,22 @@
 add_transfer_tables(gtfs, ...)
 }
 \arguments{
-\item{gtfs}{An object of class \link[gtfsio:import_gtfs]{gtfs}.}
+\item{gtfs}{An object of class \code{\link[gtfsio:import_gtfs]{gtfs}}.}
 
 \item{...}{One or more keyword arguments, with the key being the name of a
 specific transport mode, and the value being a
-\code{\link[data.table:data.table]{data.table::data.table()}} object containing the travel times
+\code{\link[data.table:data.table]{data.table}} object containing the travel times
 between different transit stop locations for that mode. Such a table can be
 created with \code{\link[=create_transfer_table]{create_transfer_table()}}, using transit stop
 locations as both origins and destinations.}
 }
 \value{
 An object of class \link[gtfsio:import_gtfs]{gtfs}. This is a
-list of multiple \code{\link[data.table:data.table]{data.table::data.table()}} objects corresponding
-to the different dataset files of a GTFS feed. In addition to those, the
-returned object will contain a \code{data.table} representing the transfer
-trips of a GTFS-Multi feed. See details.
+list of multiple \code{\link[data.table:data.table]{data.table}} objects
+corresponding to the different dataset files of a GTFS feed. In addition to
+those, the returned object will contain a
+\code{\link[data.table:data.table]{data.table}} representing the transfer trips of
+a GTFS-Multi feed. See details.
 }
 \description{
 Add a transfer table to a GTFS feed

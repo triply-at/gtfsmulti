@@ -8,14 +8,14 @@
 #' from the origin to the destination, i.e. without using transit at all.
 #'
 #' @param x An object of class `multinet`, which is a list of multiple
-#' [data.table::data.table()] objects corresponding to the different dataset
-#' files of a GTFS-Multi feed.
+#' [`data.table`][data.table::data.table()] objects corresponding to the
+#' different dataset files of a GTFS-Multi feed.
 #'
 #' @param from Origin of the routes. May be the index of a grid point. In that
 #' case it should correspond to a value in the *stop_id* column of the grid
 #' table in x. May also be any location inside the extent of the grid. Such a
 #' location may be given as a single `POINT` geometry inside an object of
-#' either class [sf::sf()] or class [sfc][sf::st_sfc()]. May also be given as
+#' either class [`sf`][sf::sf()] or [`sfc`][sf::st_sfc()]. May also be given as
 #' a numeric vector containing the two coordinate values. In any case,
 #' coordinates are expected to be expressed as longitude and latitude values
 #' with WGS84 as geodetic datum.

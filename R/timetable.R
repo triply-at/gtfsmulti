@@ -1,15 +1,14 @@
 #' Convert a GTFS-Multi feed into timetable format
 #'
-#' The timetable format is used by
-#' [gtfsrouter][gtfsrouter::gtfs_traveltimes()] to calculate routes on a
-#' transit network more efficiently. Besides the regular GTFS datasets, the
-#' timetable format contains additional tables that restructure the timetable
-#' information into formats that can easily be scanned by the routing
-#' algorithm.
+#' The timetable format is used by [gtfsrouter::gtfs_traveltimes()] to
+#' calculate routes on a transit network more efficiently. Besides the regular
+#' GTFS datasets, the timetable format contains additional tables that
+#' restructure the timetable information into formats that can easily be
+#' scanned by the routing algorithm.
 #'
 #' @param x An object of class `multinet`, which is a list of multiple
-#' [data.table::data.table()] objects corresponding to the different dataset
-#' files of a GTFS-Multi feed.
+#' [`data.table`][data.table::data.table()] objects corresponding to the
+#' different dataset files of a GTFS-Multi feed.
 #'
 #' @param origin Index of the grid point that serves as access location, i.e.
 #' the grid point from which access trips can be started. This index should

@@ -20,7 +20,7 @@ be anything understood by \code{\link[sf:st_crs]{sf::st_crs()}}. By default equa
 }
 \value{
 The rectangular extent as a single \code{POLYGON} geometry in an object
-of class \link[sf:sfc]{sfc}.
+of class \code{\link[sf:sfc]{sfc}}.
 }
 \description{
 Create a rectangular spatial extent for the analysis

@@ -1,21 +1,22 @@
 #' Pair origins with destinations
 #'
-#' @param origins A [data.frame()] or similar representing the origin
-#' locations. Should have only three columns, with the first column containing
-#' unique indices for each location, and the second and third column containing
-#' respectively the longitude and latitude coordinates of each location.
-#'
-#' @param destinations A [data.frame()] or similar representing the possible
-#' destination locations. Should have only three columns, with the first column
+#' @param origins A [`data.frame`][data.frame()] or similar representing the
+#' origin locations. Should have only three columns, with the first column
 #' containing unique indices for each location, and the second and third column
 #' containing respectively the longitude and latitude coordinates of each
 #' location.
+#'
+#' @param destinations A [`data.frame`][data.frame()] or similar representing
+#' the possible destination locations. Should have only three columns, with the
+#' first column containing unique indices for each location, and the second and
+#' third column containing respectively the longitude and latitude coordinates
+#' of each location.
 #'
 #' @param d_limit Upper distance limit (as-the-crow-flies) in meters to pair
 #' an origin with a destination. Defaults to `Inf`, meaning that each origin
 #' will be paired with all possible destinations.
 #'
-#' @return A [data.table::data.table()] object containing one
+#' @return A [`data.table`][data.table::data.table()] object containing one
 #' origin-destination pair per row. The table has six columns named *from*,
 #' *to*, *from_lon*, *from_lat*, *to_lon* and *to_lat*, with the first two
 #' containing the indices of respectively the origin and destination, and the
@@ -52,11 +53,11 @@ get_od_pairs = function(origins, destinations, d_limit = Inf) {
 #' @param origin A numeric vector of length two containing respectively
 #' the longitude and latitude coordinate of the origin location.
 #'
-#' @param candidates A [data.frame()] or similar representing the set of
-#' possible neighbour locations to choose from. Should have only three columns,
-#' with the first column containing unique indices for each location, and the
-#' second and third column containing respectively the longitude and latitude
-#' coordinates of each location.
+#' @param candidates A [`data.frame`][data.frame()] or similar representing the
+#' set of possible neighbour locations to choose from. Should have only three
+#' columns, with the first column containing unique indices for each location,
+#' and the second and third column containing respectively the longitude and
+#' latitude coordinates of each location.
 #'
 #' @param d_limit Upper distance limit (as-the-crow-flies) in meters to
 #' consider a candidate location as a neighbour of the origin. Defaults to
@@ -82,11 +83,11 @@ get_neighbours = function(origin, candidates, d_limit = Inf) {
 #' @param origin A numeric vector of length two containing respectively
 #' the longitude and latitude coordinate of the origin location.
 #'
-#' @param candidates A [data.frame()] or similar representing the set of
-#' possible neighbour locations to choose from. Should have only three columns,
-#' with the first column containing unique indices for each location, and the
-#' second and third column containing respectively the longitude and latitude
-#' coordinates of each location.
+#' @param candidates A [`data.frame`][data.frame()] or similar representing the
+#' set of possible neighbour locations to choose from. Should have only three
+#' columns, with the first column containing unique indices for each location,
+#' and the second and third column containing respectively the longitude and
+#' latitude coordinates of each location.
 #'
 #' @return A list of length two with element *idx* containing the index of the
 #' nearest neighbour and element *dist* containing the distance to it.

@@ -7,19 +7,19 @@
 build_streetnet(x, protect = NULL)
 }
 \arguments{
-\item{x}{An object of class \code{\link[sf:sf]{sf::sf()}} with \code{LINESTRING} or
+\item{x}{An object of class \code{\link[sf:sf]{sf}} with \code{LINESTRING} or
 \code{MULTILINESTRING} geometries.}
 
 \item{protect}{Set of points that protect their nearest linestring vertex
 from being smoothed (see Details). That is, the closest linestring vertices
 to these points are guaranteed to be a node in the resulting graph, even if
 they are neither a terminal node nor a junction node. May be given either as
-an object of class \code{\link[sf:sf]{sf::sf()}} with \code{POINT} geometries, or as a two-column
-numeric matrix containing respectively the longitude and latitude
-coordinates of the points.}
+an object of class \code{\link[sf:sf]{sf}} or \code{\link[sf:st_as_sfc]{sfc}} with \code{POINT}
+geometries, or as a two-column numeric matrix containing respectively the
+longitude and latitude coordinates of the points.}
 }
 \value{
-An object of class \code{\link[sfnetworks:sfnetwork]{sfnetworks::sfnetwork()}}.
+An object of class \code{\link[sfnetworks:sfnetwork]{sfnetworks}}.
 }
 \description{
 Build a routable graph from a set of linestrings

@@ -10,11 +10,11 @@ get_neighbours(origin, candidates, d_limit = Inf)
 \item{origin}{A numeric vector of length two containing respectively
 the longitude and latitude coordinate of the origin location.}
 
-\item{candidates}{A \code{\link[=data.frame]{data.frame()}} or similar representing the set of
-possible neighbour locations to choose from. Should have only three columns,
-with the first column containing unique indices for each location, and the
-second and third column containing respectively the longitude and latitude
-coordinates of each location.}
+\item{candidates}{A \code{\link[=data.frame]{data.frame}} or similar representing the
+set of possible neighbour locations to choose from. Should have only three
+columns, with the first column containing unique indices for each location,
+and the second and third column containing respectively the longitude and
+latitude coordinates of each location.}
 
 \item{d_limit}{Upper distance limit (as-the-crow-flies) in meters to
 consider a candidate location as a neighbour of the origin. Defaults to

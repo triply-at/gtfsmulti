@@ -10,16 +10,17 @@ import_transitnet(path, extent = NULL)
 \item{path}{Path to a \code{.zip} file containing all required GTFS
 datasets as \code{.txt} files.}
 
-\item{extent}{The area of interest as object of class \code{\link[sf:sf]{sf::sf()}}. Only
-transit stop locations inside this area will be imported. Trips, routes,
-agencies, services and if present also transfers, pathways and shapes will
-be filtered accordingly, such that only those with a relation to the
-selected stops are imported. If \code{NULL}, the complete GTFS feed is imported.}
+\item{extent}{The area of interest as object of class \code{\link[sf:sf]{sf}} or
+\code{\link[sf:st_as_sfc]{sfc}}. Only transit stop locations inside this area will
+be imported. Trips, routes, agencies, services and if present also
+transfers, pathways and shapes will be filtered accordingly, such that only
+those with a relation to the selected stops are imported. If \code{NULL}, the
+complete GTFS feed is imported.}
 }
 \value{
-An object of class \link[gtfsio:import_gtfs]{gtfs}, which is a
-list of multiple \code{\link[data.table:data.table]{data.table::data.table()}} objects corresponding
-to the different dataset files of a GTFS feed.
+An object of class \code{\link[gtfsio:import_gtfs]{gtfs}}, which is a
+list of multiple \code{\link[data.table:data.table]{data.table}} objects
+corresponding to the different dataset files of a GTFS feed.
 }
 \description{
 Import a regular GTFS feed from a zip archive

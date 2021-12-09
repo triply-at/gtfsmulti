@@ -8,8 +8,8 @@ export_multinet(x, path, ...)
 }
 \arguments{
 \item{x}{An object of class \code{multinet}, which is a list of multiple
-\code{\link[data.table:data.table]{data.table::data.table()}} objects corresponding to the different dataset
-files of a GTFS-Multi feed.}
+\code{\link[data.table:data.table]{data.table}} objects corresponding to the
+different dataset files of a GTFS-Multi feed.}
 
 \item{path}{Path to a \code{.zip} file where the GTFS-Multi feed should be
 written to.}

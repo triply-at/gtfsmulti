@@ -12,8 +12,8 @@ datasets as \code{.txt} files.}
 }
 \value{
 An object of class \code{multinet}, which is a list of multiple
-\code{\link[data.table:data.table]{data.table::data.table()}} objects corresponding to the different dataset
-files of a GTFS-Multi feed.
+\code{\link[data.table:data.table]{data.table}} objects corresponding to the
+different dataset files of a GTFS-Multi feed.
 }
 \description{
 Import a GTFS-Multi feed from a zip archive

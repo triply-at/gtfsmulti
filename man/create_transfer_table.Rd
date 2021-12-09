@@ -14,25 +14,27 @@ create_transfer_table(
 )
 }
 \arguments{
-\item{origins}{A \code{\link[data.table:data.table]{data.table::data.table()}} object containing the
-origin locations of the transfer trips. See details.}
+\item{origins}{A \code{\link[data.table:data.table]{data.table}} object containing
+the origin locations of the transfer trips. See details.}
 
-\item{destinations}{A \code{\link[data.table:data.table]{data.table::data.table()}} object containing
-the destination locations of the transfer trips. See details.}
+\item{destinations}{A \code{\link[data.table:data.table]{data.table}} object
+containing the destination locations of the transfer trips. See details.}
 
 \item{streetnet}{The street network as an object of class
-\code{\link[sfnetworks:sfnetwork]{sfnetworks::sfnetwork()}} or \code{\link[dodgr:dodgr_streetnet]{dodgr::dodgr_streetnet()}}.}
+\code{\link[sfnetworks:sfnetwork]{sfnetworks}},
+\code{\link[dodgr:dodgr_streetnet]{dodgr_streetnet}} or
+\code{\link[dodgr:dodgr_streetnet_sc]{dodgr_streetnet_sc}}.}
 
-\item{d_limit}{Upper distance limit (as-the-crow-flies) in meters to consider
-a possible transfer between an origin and a destination.}
+\item{d_limit}{Upper distance limit (as-the-crow-flies) in meters to
+consider a possible transfer between an origin and a destination.}
 
 \item{min_time}{Minimum travel time for any transfer trip in seconds,
 independent of the calculated travel time by the routing algorithm.}
 
 \item{...}{Additional parameters passed on to \code{\link[=streetnet_traveltimes]{streetnet_traveltimes()}}.
-When parameter \code{streetnet} is of class \code{\link[sfnetworks:sfnetwork]{sfnetworks::sfnetwork()}}, these
-include the \code{time_column} and \code{weight_column} parameters. See
-\code{\link[=streetnet_traveltimes]{streetnet_traveltimes()}} for details.}
+When parameter \code{streetnet} is of class
+\code{\link[sfnetworks:sfnetwork]{sfnetworks}}, these include the \code{time_column} and
+\code{weight_column} parameters. See \code{\link[=streetnet_traveltimes]{streetnet_traveltimes()}} for details.}
 }
 \description{
 Create a transfer table for a set of origins and destinations

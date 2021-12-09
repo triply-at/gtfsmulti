@@ -29,14 +29,14 @@ multinet_traveltimes(
 }
 \arguments{
 \item{x}{An object of class \code{multinet}, which is a list of multiple
-\code{\link[data.table:data.table]{data.table::data.table()}} objects corresponding to the different dataset
-files of a GTFS-Multi feed.}
+\code{\link[data.table:data.table]{data.table}} objects corresponding to the
+different dataset files of a GTFS-Multi feed.}
 
 \item{from}{Origin of the routes. May be the index of a grid point. In that
 case it should correspond to a value in the \emph{stop_id} column of the grid
 table in x. May also be any location inside the extent of the grid. Such a
 location may be given as a single \code{POINT} geometry inside an object of
-either class \code{\link[sf:sf]{sf::sf()}} or class \link[sf:sfc]{sfc}. May also be given as
+either class \code{\link[sf:sf]{sf}} or \code{\link[sf:sfc]{sfc}}. May also be given as
 a numeric vector containing the two coordinate values. In any case,
 coordinates are expected to be expressed as longitude and latitude values
 with WGS84 as geodetic datum.}

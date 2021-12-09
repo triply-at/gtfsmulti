@@ -12,7 +12,7 @@
 #' be anything understood by [sf::st_crs()]. By default equal to `input_crs`.
 #'
 #' @return The rectangular extent as a single `POLYGON` geometry in an object
-#' of class [sfc][sf::st_sfc()].
+#' of class [`sfc`][sf::st_sfc()].
 #'
 #' @export
 create_extent = function(bounds, input_crs = 4326, output_crs = input_crs) {

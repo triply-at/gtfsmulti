@@ -8,7 +8,8 @@ create_reference_grid(extent, cellsize, output_crs = sf::st_crs(extent))
 }
 \arguments{
 \item{extent}{The spatial extent of the analysis as a single \code{POLYGON}
-geometry in either object of class \code{\link[sf:sf]{sf::sf()}} or class \link[sf:sfc]{sfc}.}
+geometry in either object of class \code{\link[sf:sf]{sf}} or
+\code{\link[sf:sfc]{sfc}}.}
 
 \item{cellsize}{Cellsize in units of \code{output_crs} (usually meters). Cells
 are always squares, i.e. the width and height of the cells are both equal
@@ -19,7 +20,7 @@ to \code{cellsize}.}
 }
 \value{
 The reference grid as an object of class
-\link[stars:st_as_stars]{stars}.
+\code{\link[stars:st_as_stars]{stars}}.
 }
 \description{
 Create a reference grid over the spatial extent of the analysis
