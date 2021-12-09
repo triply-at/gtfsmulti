@@ -1,4 +1,4 @@
-#' Reduce a multiple travel times to a set of percentile values
+#' Reduce multiple travel times to a set of percentile values
 #'
 #' @param x Object to reduce. May be a travel time grid as object of class
 #' [`stars`][stars::st_as_stars()] created by [create_traveltime_grid()] and
