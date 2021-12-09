@@ -1,0 +1,41 @@
+reference:
+  - title: Construction
+    contents:
+      - as_multinet
+      - add_grid_table
+      - add_access_tables
+      - add_direct_tables
+      - add_egress_tables
+      - add_transfer_tables
+      - build_streetnet
+      - create_grid_table
+      - create_transfer_table
+      - create_extent
+      - create_reference_grid
+      - create_traveltime_grid
+  - title: Import and export
+    contents:
+      - import_grid
+      - import_multinet
+      - import_streetnet
+      - import_transitnet
+      - export_grid
+      - export_multinet
+      - assert_multinet
+      - multinet_to_gtfs
+      - DEFAULT_HIGHWAY_TYPES
+      - DEFAULT_TAGS
+  - title: Routing
+    contents:
+      - multinet_traveltimes
+      - streetnet_traveltimes
+  - title: Utils
+    contents:
+      - mask_grid
+      - reduce_to_percentiles
+      - get_neighbours
+      - get_nearest_neighbour
+      - get_od_pairs
+  - title: Example data
+    contents:
+      - tampere

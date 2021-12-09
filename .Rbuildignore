@@ -13,3 +13,4 @@
 ^vignettes/website_only$
 ^inst/tampere\.gpkg$
 ^\.todo$
+^docs$
