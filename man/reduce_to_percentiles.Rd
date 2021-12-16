@@ -4,7 +4,7 @@
 \alias{reduce_to_percentiles}
 \alias{reduce_to_percentiles.data.table}
 \alias{reduce_to_percentiles.stars}
-\title{Reduce a multiple travel times to a set of percentile values}
+\title{Reduce multiple travel times to a set of percentile values}
 \usage{
 reduce_to_percentiles(x, percentiles = c(5, 25, 50, 75, 95))
 
@@ -33,7 +33,7 @@ followed by the corresponding percentile value. The original travel time
 columns are removed.
 }
 \description{
-Reduce a multiple travel times to a set of percentile values
+Reduce multiple travel times to a set of percentile values
 }
 \seealso{
 \code{\link[=create_traveltime_grid]{create_traveltime_grid()}}, \code{\link[=multinet_traveltimes]{multinet_traveltimes()}}
