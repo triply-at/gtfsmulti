@@ -1,0 +1,8 @@
+pandoc: 2.7.3
+pkgdown: 2.0.1
+pkgdown_sha: ~
+articles:
+  01_intro: website_only/01_intro.html
+  02_route: website_only/02_route.html
+last_built: 2021-12-20T16:53Z
+
