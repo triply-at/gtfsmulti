@@ -11,12 +11,14 @@
 #' @param percentiles Percentile values that should be calculated.
 #'
 #' @return In case `x` is a travel time grid: the updated travel time grid as
-#' object of class [`stars`][stars::st_as_stars()], with the third now having
-#' one coordinate per calculated percentile value. The original third
-#' dimension is removed. In case `x` is a data table: the updated table having
-#' one travel time column per calculated percentile, all named "travel_time_p"
-#' followed by the corresponding percentile value. The original travel time
-#' columns are removed.
+#' object of class [`stars`][stars::st_as_stars()], with the third dimension
+#' now having one coordinate per calculated percentile value. The original
+#' third dimension is removed.
+#'
+#' In case `x` is a data table: the updated table having one travel time column
+#' per calculated percentile, all named "travel_time_p" followed by the
+#' corresponding percentile value. The original travel time columns are
+#' removed.
 #'
 #' @seealso [create_traveltime_grid()], [multinet_traveltimes()]
 #'

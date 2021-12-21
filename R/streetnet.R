@@ -122,12 +122,12 @@ import_streetnet = function(path, extent = NULL, clip = FALSE,
 #' @param protect Set of points that protect their nearest linestring vertex
 #' from being smoothed (see Details). That is, the closest linestring vertices
 #' to these points are guaranteed to be a node in the resulting graph, even if
-#' they are neither a terminal node nor a junction node. May be given either as
+#' they are neither a pendant node nor a junction node. May be given either as
 #' an object of class [`sf`][sf::sf()] or [`sfc`][sf::st_as_sfc()] with `POINT`
 #' geometries, or as a two-column numeric matrix containing respectively the
 #' longitude and latitude coordinates of the points.
 #'
-#' @return An object of class [`sfnetworks`][sfnetworks::sfnetwork()].
+#' @return An object of class [`sfnetwork`][sfnetworks::sfnetwork()].
 #'
 #' @details Graph building is implemented as a step-wise process. The graph
 #' will be directed, so first all linestring geometries of `x` that are *not*
@@ -138,7 +138,7 @@ import_streetnet = function(path, extent = NULL, clip = FALSE,
 #' endpoints become the nodes. Endpoints that are shared between multiple edges
 #' become a single node, such that these edges are connected. Only the largest
 #' connected component of the initial graph is preserved. Finally, the initial
-#' graph is smoothed by removing all nodes that are neither a terminal node
+#' graph is smoothed by removing all nodes that are neither a pendant node
 #' (i.e. a node at the end of an edge without a connection to any other edge)
 #' nor a junction node (i.e. a node that connects more than two edges) nor a
 #' nearest node to any of the points passed to the `protect` parameter.
@@ -185,7 +185,7 @@ build_streetnet = function(x, protect = NULL) {
 #' Calculate travel times on a street network
 #'
 #' @param x The street network as an object of class
-#' [`sfnetworks`][sfnetworks::sfnetwork()],
+#' [`sfnetwork`][sfnetworks::sfnetwork()],
 #' [`dodgr_streetnet`][dodgr::dodgr_streetnet()] or
 #' [`dodgr_streetnet_sc`][dodgr::dodgr_streetnet_sc()].
 #'
