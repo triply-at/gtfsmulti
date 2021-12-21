@@ -79,14 +79,14 @@
 </h1></div>
 <p>The <code>gtfsmulti</code> R package implements a very experimental approach to creating, storing and analyzing multi-modal transportation networks.</p>
 <p>The broad idea is as follows. We first create a fine regular grid over an area of interest. Each grid point forms a possible origin and destination of a multi-modal trip. Then we pre-calculate street network travel times for different legs of a multi-modal trip. That is: from each grid point to nearby transit stops (<em>access trips</em>), from each transit stop to nearby grid points (<em>egress trips</em>), between nearby transit stops (<em>transfer trips</em>) and between nearby grid points (<em>direct trips</em>). Multiple transport modes (e.g. walking, biking) can be included in these calculations, and edge weights can be flexibly defined for each of the modes (i.e. not limited to only optimizing travel time).</p>
-<p>The grid itself can be added to a <a href="https://developers.google.com/transit/gtfs" class="external-link">GTFS feed</a> feed as a table in similar format as a standard <a href="https://developers.google.com/transit/gtfs/reference#stopstxt" class="external-link">stops table</a>, while the access, egress, transfer and direct trips are all added to the GTFS feed as separate tables in similar format as a standard <a href="https://developers.google.com/transit/gtfs/reference#transferstxt" class="external-link">transfer table</a>. All together this forms a <em>GTFS-Multi feed</em>.</p>
+<p>The grid itself can be added to a <a href="https://developers.google.com/transit/gtfs" class="external-link">GTFS feed</a> feed as a table in similar format as a standard <a href="https://developers.google.com/transit/gtfs/reference#stopstxt" class="external-link">stops table</a>, while the access, egress, transfer and direct trips can all be added to the GTFS feed as separate tables in similar format as a standard <a href="https://developers.google.com/transit/gtfs/reference#transferstxt" class="external-link">transfer table</a>. All together this forms a <em>GTFS-Multi feed</em>.</p>
 <p>When finding multi-modal routes with such a GTFS-Multi feed, all street network travel times can be integrated in the timetable of the transit network, and <em>only</em> a timetable-based routing algorithm is enough to solve the multi-modal routing task.</p>
 <p>The ideas and applications are explained in much more detail in two articles (since they are quite large they are currently not included as regular package vignettes):</p>
 <ul>
 <li>
-<a href="vignettes/intro.Rmd">Intro</a>: This article explains how the ideas behind the approach developed and how you can construct a GTFS-Multi feed.</li>
+<a href="vignettes/intro.Rmd">Intro</a>: Explains how the ideas behind the approach developed and how you can construct a GTFS-Multi feed.</li>
 <li>
-<a href="vignettes/route.Rmd">Route</a>: This article shows how to calculate multi-modal routes with a GTFS-Multi feed.</li>
+<a href="vignettes/route.Rmd">Route</a>: Shows how to calculate multi-modal routes with a GTFS-Multi feed.</li>
 </ul>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
