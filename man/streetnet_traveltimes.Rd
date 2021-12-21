@@ -23,7 +23,7 @@ streetnet_traveltimes(x, od_pairs, ...)
 }
 \arguments{
 \item{x}{The street network as an object of class
-\code{\link[sfnetworks:sfnetwork]{sfnetworks}},
+\code{\link[sfnetworks:sfnetwork]{sfnetwork}},
 \code{\link[dodgr:dodgr_streetnet]{dodgr_streetnet}} or
 \code{\link[dodgr:dodgr_streetnet_sc]{dodgr_streetnet_sc}}.}
 

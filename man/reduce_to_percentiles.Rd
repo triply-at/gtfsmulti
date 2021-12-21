@@ -25,12 +25,14 @@ and having multiple travel time columns with names starting with
 }
 \value{
 In case \code{x} is a travel time grid: the updated travel time grid as
-object of class \code{\link[stars:st_as_stars]{stars}}, with the third now having
-one coordinate per calculated percentile value. The original third
-dimension is removed. In case \code{x} is a data table: the updated table having
-one travel time column per calculated percentile, all named "travel_time_p"
-followed by the corresponding percentile value. The original travel time
-columns are removed.
+object of class \code{\link[stars:st_as_stars]{stars}}, with the third dimension
+now having one coordinate per calculated percentile value. The original
+third dimension is removed.
+
+In case \code{x} is a data table: the updated table having one travel time column
+per calculated percentile, all named "travel_time_p" followed by the
+corresponding percentile value. The original travel time columns are
+removed.
 }
 \description{
 Reduce multiple travel times to a set of percentile values
