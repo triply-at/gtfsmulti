@@ -18,7 +18,7 @@ The ideas and applications are explained in much more detail in two articles (si
 At this moment the package can only be installed from source. Using `remotes` is the easiest way to do so:
 
 ```r
-remotes::install_github("luukvdmeer/gtfsmulti")
+remotes::install_github("triply-at/gtfsmulti")
 ```
 
 ## Contribution
