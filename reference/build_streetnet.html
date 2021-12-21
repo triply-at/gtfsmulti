@@ -72,14 +72,14 @@
 <dd><p>Set of points that protect their nearest linestring vertex
 from being smoothed (see Details). That is, the closest linestring vertices
 to these points are guaranteed to be a node in the resulting graph, even if
-they are neither a terminal node nor a junction node. May be given either as
+they are neither a pendant node nor a junction node. May be given either as
 an object of class <code><a href="https://r-spatial.github.io/sf/reference/sf.html" class="external-link">sf</a></code> or <code><a href="https://r-spatial.github.io/sf/reference/st_as_sfc.html" class="external-link">sfc</a></code> with <code>POINT</code>
 geometries, or as a two-column numeric matrix containing respectively the
 longitude and latitude coordinates of the points.</p></dd>
 </dl></div>
     <div id="value">
     <h2>Value</h2>
-    <p>An object of class <code><a href="https://luukvdmeer.github.io/sfnetworks/reference/sfnetwork.html" class="external-link">sfnetworks</a></code>.</p>
+    <p>An object of class <code><a href="https://luukvdmeer.github.io/sfnetworks/reference/sfnetwork.html" class="external-link">sfnetwork</a></code>.</p>
     </div>
     <div id="details">
     <h2>Details</h2>
@@ -92,7 +92,7 @@ on their own. These serve as the edges in the initial graph, and their
 endpoints become the nodes. Endpoints that are shared between multiple edges
 become a single node, such that these edges are connected. Only the largest
 connected component of the initial graph is preserved. Finally, the initial
-graph is smoothed by removing all nodes that are neither a terminal node
+graph is smoothed by removing all nodes that are neither a pendant node
 (i.e. a node at the end of an edge without a connection to any other edge)
 nor a junction node (i.e. a node that connects more than two edges) nor a
 nearest node to any of the points passed to the <code>protect</code> parameter.</p>
